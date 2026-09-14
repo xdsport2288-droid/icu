@@ -64,10 +64,17 @@ a{color:var(--sea); font-weight:600}
 label{display:block; margin-top:12px; font-size:13px; font-weight:600; color:var(--muted)}
 input{display:block; width:100%; min-width:0; max-width:100%; margin-top:4px; padding:10px 11px; font:inherit; font-size:16px;
   color:var(--ink); background:var(--surface-2); border:1px solid var(--line); border-radius:3px}
-input[type=date], input[type=time]{font-family:"IBM Plex Mono",monospace}
+/* 한국어 시간 칸은 "오후 06:00"처럼 길어 휴대폰 반 칸에서 잘린다 — 글자·여백을 한 단계 줄인다 */
+input[type=date], input[type=time]{font-family:"IBM Plex Mono",monospace; font-size:15px; padding:10px 6px}
 /* 날짜·시간 칸은 브라우저가 정한 최소 폭이 있어 1fr만 주면 휴대폰에서 상자 밖으로 삐져나온다 */
 .row2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0 12px}
 .row2 > div{min-width:0}
+/* 상태 고르기 — 확정 / 예정(조율 중). 전역 input 모양(블록·꽉 찬 폭)을 라디오에는 쓰지 않는다 */
+.seg{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px}
+.seg label{display:flex; align-items:center; gap:6px; margin:0; padding:8px 12px; font-size:15px;
+  font-weight:600; color:var(--ink); border:1px solid var(--line); border-radius:3px; background:var(--surface-2); cursor:pointer}
+.seg input{display:inline; width:auto; margin:0; padding:0; accent-color:var(--sea)}
+.seg label:has(input:checked){border-color:var(--sea); background:var(--sea-soft)}
 .btns{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px}
 button{font:inherit; font-size:15px; font-weight:600; padding:10px 16px; border-radius:3px; cursor:pointer;
   border:1px solid var(--sea); background:var(--sea); color:var(--surface)}
@@ -126,8 +133,13 @@ ul.list button{font-size:13px; padding:5px 10px}
   </section>
 
   <section class="box">
-    <h2 id="formtitle">정기모임 확정하기</h2>
+    <h2 id="formtitle">정기모임 일정 정하기</h2>
     <p class="muted" id="replaces" style="margin:0"></p>
+    <label>회원 화면 표시</label>
+    <div class="seg" role="radiogroup" aria-label="회원 화면 표시">
+      <label><input type="radio" name="st" value="확정" checked> 확정</label>
+      <label><input type="radio" name="st" value="예정"> 예정 (조율 중)</label>
+    </div>
     <div class="row2">
       <div><label for="f-date">날짜</label><input id="f-date" type="date" required></div>
       <div><label for="f-time">시간</label><input id="f-time" type="time"></div>
@@ -135,18 +147,18 @@ ul.list button{font-size:13px; padding:5px 10px}
     <label for="f-place">장소</label>
     <input id="f-place" type="text" maxlength="40" placeholder="예) 인천 ○○횟집 (구월동)">
     <label for="f-note">안내 문구 (선택)</label>
-    <input id="f-note" type="text" maxlength="80" placeholder="비워 두면 '회원들과 조율해 확정한 일정입니다.'">
+    <input id="f-note" type="text" maxlength="80" placeholder="비워 두면 확정·예정에 맞는 기본 문구가 나옵니다">
     <div class="btns">
-      <button id="save" type="button">확정 저장</button>
+      <button id="save" type="button">저장</button>
       <button id="cancel" class="sub" type="button" hidden>수정 취소</button>
     </div>
     <p class="hint">분기 표시는 날짜로 자동 계산됩니다. 모임 날짜가 지나면 회원 화면은 다음 분기 회칙 날짜로 넘어갑니다.</p>
   </section>
 
   <section class="box">
-    <h2>확정된 일정</h2>
+    <h2>정해 둔 일정</h2>
     <ul class="list" id="list"></ul>
-    <p class="muted" id="empty" style="margin:0">아직 확정한 일정이 없습니다. 회원 화면에는 회칙 날짜가 ‘예정’으로 보입니다.</p>
+    <p class="muted" id="empty" style="margin:0">아직 정해 둔 일정이 없습니다. 회원 화면에는 회칙 날짜가 ‘예정’으로 보입니다.</p>
   </section>
 
   <p class="muted"><a href="./">회원 화면 열기 →</a></p>
@@ -169,6 +181,11 @@ const b64e = s => { let b = ""; new TextEncoder().encode(s).forEach(x => { b += 
 const b64d = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g, "")), c => c.charCodeAt(0)));
 
 let token = "", R = null, data = { confirmed: [] }, sha = null, editing = -1;
+/* 상태: 확정 / 예정(조율 중). 예전에 저장한 일정에는 상태가 없으니 확정으로 본다 */
+const stOf = c => (c.status === "예정" ? "예정" : "확정");
+const getSt = () => document.querySelector('input[name="st"]:checked').value;
+const setSt = v => { document.querySelector('input[name="st"][value="' + v + '"]').checked = true; };
+const resetForm = () => { editing = -1; $("f-date").value = ""; $("f-place").value = ""; $("f-note").value = ""; setSt("확정"); };
 try { token = localStorage.getItem(KEY) || ""; } catch (e) {}
 
 function say(text, kind) {
@@ -218,18 +235,19 @@ function render() {
   const list = data.confirmed || [];
   const rule = ruleNext(list), up = upcoming()[0];
   const pick = up && (!rule || ymd(up.c.date) <= rule)
-    ? { d: ymd(up.c.date), time: up.c.time || R.time, place: up.c.place, ok: true }
+    ? { d: ymd(up.c.date), time: up.c.time || R.time, place: up.c.place, ok: stOf(up.c) === "확정" }
     : rule ? { d: rule, time: R.time, place: "", ok: false } : null;
   $("now").innerHTML = pick
     ? '<div><b>' + qname(qkey(pick.d)) + ' 정기모임</b><span class="tag' + (pick.ok ? ' ok">확정' : '">예정') + '</span></div>'
       + '<div class="when">' + show(pick.d) + ' <span class="t">' + esc(pick.time || "") + '</span></div>'
       + (pick.place ? '<div>장소 <b>' + esc(pick.place) + '</b></div>' : '')
-      + (pick.ok ? '' : '<div class="muted">회칙(분기별 둘째 주 금요일)으로 계산한 날짜입니다.</div>')
+      + (pick.place || pick.ok ? '' : '<div class="muted">회칙(분기별 둘째 주 금요일)으로 계산한 날짜입니다.</div>')
     : '<span class="muted">표시할 정기모임이 없습니다.</span>';
 
   const ups = upcoming();
   $("list").innerHTML = ups.map(x =>
     '<li><span class="d">' + show(ymd(x.c.date)) + ' ' + esc(x.c.time || "") + '</span>'
+    + '<span class="tag' + (stOf(x.c) === "확정" ? ' ok">확정' : '">예정') + '</span>'
     + '<span class="p">' + esc(x.c.place || "장소 미정") + '</span>'
     + '<span class="acts"><button class="sub" data-edit="' + x.i + '">수정</button>'
     + '<button class="danger" data-del="' + x.i + '">삭제</button></span></li>').join("");
@@ -246,15 +264,15 @@ function fillForm() {
   const list = data.confirmed || [];
   if (editing >= 0) {
     const c = list[editing];
-    $("formtitle").textContent = "확정 일정 수정";
+    $("formtitle").textContent = "일정 수정";
     $("replaces").textContent = c.replaces ? qname(c.replaces) + " 회칙 날짜를 대신하는 일정입니다." : "";
     $("cancel").hidden = false; $("save").textContent = "수정 저장";
     return;
   }
   const rule = ruleNext(list);
-  $("formtitle").textContent = "정기모임 확정하기";
-  $("replaces").textContent = rule ? qname(qkey(rule)) + " 회칙 날짜 " + show(rule) + " 대신 확정합니다." : "";
-  $("cancel").hidden = true; $("save").textContent = "확정 저장";
+  $("formtitle").textContent = "정기모임 일정 정하기";
+  $("replaces").textContent = rule ? qname(qkey(rule)) + " 회칙 날짜 " + show(rule) + " 대신 정합니다." : "";
+  $("cancel").hidden = true; $("save").textContent = "저장";
   if (!$("f-date").value && rule) $("f-date").value = iso(rule);
   if (!$("f-time").value && R.time) $("f-time").value = R.time;
 }
@@ -279,7 +297,8 @@ $("save").onclick = async () => {
   if (ymd(date) < today()) return say("지난 날짜는 확정할 수 없습니다.", "err");
   const list = (data.confirmed || []).slice();
   const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 400);   // 1년 넘은 지난 확정은 정리
-  const entry = { date, time, place, note, saved: new Date().toISOString() };
+  const status = getSt();
+  const entry = { date, time, place, note, status, saved: new Date().toISOString() };
   if (editing >= 0) {
     entry.replaces = list[editing].replaces || "";
     list[editing] = entry;
@@ -291,15 +310,15 @@ $("save").onclick = async () => {
   const next = { confirmed: list.filter(c => ymd(c.date) >= cutoff).sort((a, b) => (a.date < b.date ? -1 : 1)) };
   $("save").disabled = true;
   say("저장하는 중…", "info");
-  const ok = await put(next, "정기모임 확정: " + date + " " + time + (place ? " · " + place : ""));
+  const ok = await put(next, "정기모임 " + status + ": " + date + " " + time + (place ? " · " + place : ""));
   if (ok) {
-    editing = -1; $("f-date").value = ""; $("f-place").value = ""; $("f-note").value = "";
-    say("저장했습니다. 1~2분 뒤 회원 화면에 반영됩니다.", "ok");
+    resetForm();
+    say("‘" + status + "’으로 저장했습니다. 1~2분 뒤 회원 화면에 반영됩니다.", "ok");
   }
   render();
 };
 
-$("cancel").onclick = () => { editing = -1; $("f-date").value = ""; $("f-place").value = ""; $("f-note").value = ""; render(); };
+$("cancel").onclick = () => { resetForm(); render(); };
 
 $("list").onclick = async e => {
   const b = e.target.closest("button"); if (!b) return;
@@ -307,15 +326,16 @@ $("list").onclick = async e => {
     editing = +b.dataset.edit;
     const c = data.confirmed[editing];
     $("f-date").value = c.date; $("f-time").value = c.time || ""; $("f-place").value = c.place || ""; $("f-note").value = c.note || "";
+    setSt(stOf(c));
     render(); $("f-date").scrollIntoView({ block: "center" });
   }
   if (b.dataset.del) {
     const c = data.confirmed[+b.dataset.del];
-    if (!confirm(show(ymd(c.date)) + " 확정을 지울까요?\n지우면 회원 화면은 회칙 날짜(예정)로 돌아갑니다.")) return;
+    if (!confirm(show(ymd(c.date)) + " 일정을 지울까요?\n날짜·장소가 지워지고 회원 화면은 회칙 날짜(예정)로 돌아갑니다.\n내용을 남기고 표시만 바꾸려면 ‘수정’에서 확정/예정을 고르세요.")) return;
     const next = { confirmed: data.confirmed.filter((_, i) => i !== +b.dataset.del) };
     say("지우는 중…", "info");
-    if (await put(next, "정기모임 확정 취소: " + c.date)) say("지웠습니다. 1~2분 뒤 회원 화면이 회칙 날짜로 돌아갑니다.", "ok");
-    editing = -1; render();
+    if (await put(next, "정기모임 일정 삭제: " + c.date)) say("지웠습니다. 1~2분 뒤 회원 화면이 회칙 날짜로 돌아갑니다.", "ok");
+    resetForm(); render();
   }
 };
 
@@ -349,6 +369,7 @@ $("keyclear").onclick = () => {
     render();
   } catch (e) {
     $("now").textContent = "불러오지 못했습니다. 사이트 주소(…/icu/admin.html)에서 열어 주세요.";
+    $("keyon").hidden = !token; $("keyoff").hidden = !!token;   // 열쇠 칸은 그래도 보이게
   }
 })();
 </script>
