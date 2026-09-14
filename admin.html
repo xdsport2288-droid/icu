@@ -52,9 +52,27 @@ h1{margin:12px 0 0; font-size:23px; font-weight:700; letter-spacing:-.01em}
 .box h2{margin:0 0 8px; font-size:16.5px; font-weight:700; color:var(--sea)}
 .box.now{border-left:5px solid var(--sea)}
 .muted{color:var(--muted); font-size:13px}
-.tag{font-size:11.5px; font-weight:600; padding:2px 7px; border-radius:2px; border:1px solid var(--line);
-  color:var(--muted); white-space:nowrap; margin-left:6px; vertical-align:2px}
+/* 회원 화면과 같은 세 색 — 예정(회칙) 파랑 · 조율 중 주황 · 확정 초록 */
+.tag{font-size:11.5px; font-weight:600; padding:2px 7px; border-radius:2px; border:1px solid var(--sea);
+  color:var(--sea); background:var(--sea-soft); white-space:nowrap; margin-left:6px; vertical-align:2px}
+.tag.tune{border-color:var(--rust); color:var(--rust); background:var(--rust-soft)}
 .tag.ok{border-color:var(--ok); color:var(--ok); background:var(--ok-soft)}
+/* 출석 체크 — 회원 순번대로 누르는 버튼. 누르면 초록(참석) */
+.checks{display:grid; grid-template-columns:repeat(auto-fill,minmax(128px,1fr)); gap:8px; margin-top:6px}
+.checks button{display:flex; align-items:center; gap:8px; padding:11px 12px; font-size:15.5px; text-align:left;
+  background:var(--surface-2); color:var(--ink); border:1px solid var(--line)}
+.checks button .no{font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:600; color:var(--faint); min-width:1.4em}
+.checks button[aria-pressed="true"]{background:var(--ok-soft); border-color:var(--ok); color:var(--ok)}
+.checks button[aria-pressed="true"] .no{color:var(--ok)}
+.checks button[aria-pressed="true"]::after{content:"✓"; margin-left:auto; font-weight:700}
+.chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.chips button{font-size:13.5px; padding:6px 10px; background:var(--surface-2); color:var(--ink-2); border:1px solid var(--line)}
+.chips button.on{background:var(--sea-soft); color:var(--sea); border-color:var(--sea)}
+.chips .guest{background:var(--ok-soft); color:var(--ok); border-color:var(--ok)}
+.guestrow{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:end}
+.guestrow button{margin-top:4px}
+.sum{margin:12px 0 0; font-weight:600; color:var(--ink-2)}
+.sum .rate{font-family:"IBM Plex Mono",monospace; color:var(--sea)}
 .when{font-family:"IBM Plex Mono",monospace; font-size:18px; font-weight:700; font-variant-numeric:tabular-nums}
 .when .t{color:var(--sea)}
 ol.steps{margin:6px 0 10px; padding-left:20px; color:var(--ink-2)}
@@ -69,7 +87,7 @@ input[type=date], input[type=time]{font-family:"IBM Plex Mono",monospace; font-s
 /* 날짜·시간 칸은 브라우저가 정한 최소 폭이 있어 1fr만 주면 휴대폰에서 상자 밖으로 삐져나온다 */
 .row2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0 12px}
 .row2 > div{min-width:0}
-/* 상태 고르기 — 확정 / 예정(조율 중). 전역 input 모양(블록·꽉 찬 폭)을 라디오에는 쓰지 않는다 */
+/* 상태 고르기 — 확정 / 조율 중. 전역 input 모양(블록·꽉 찬 폭)을 라디오에는 쓰지 않는다 */
 .seg{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px}
 .seg label{display:flex; align-items:center; gap:6px; margin:0; padding:8px 12px; font-size:15px;
   font-weight:600; color:var(--ink); border:1px solid var(--line); border-radius:3px; background:var(--surface-2); cursor:pointer}
@@ -100,7 +118,7 @@ ul.list button{font-size:13px; padding:5px 10px}
   <header>
     <span class="owner">ICU</span>
     <h1>정기모임 관리</h1>
-    <p class="lede">관리자 전용 화면입니다. 여기서 확정한 날짜·시간·장소가 회원 화면의 정기모임 카드에 1~2분 안에 반영됩니다.</p>
+    <p class="lede">관리자 전용 화면입니다. 여기서 정한 정기모임 일정과 출석 체크가 회원 화면에 1~2분 안에 반영됩니다.</p>
   </header>
 
   <p class="msg" id="msg" role="status" hidden></p>
@@ -138,7 +156,7 @@ ul.list button{font-size:13px; padding:5px 10px}
     <label>회원 화면 표시</label>
     <div class="seg" role="radiogroup" aria-label="회원 화면 표시">
       <label><input type="radio" name="st" value="확정" checked> 확정</label>
-      <label><input type="radio" name="st" value="예정"> 예정 (조율 중)</label>
+      <label><input type="radio" name="st" value="조율"> 조율 중</label>
     </div>
     <div class="row2">
       <div><label for="f-date">날짜</label><input id="f-date" type="date" required></div>
@@ -147,7 +165,7 @@ ul.list button{font-size:13px; padding:5px 10px}
     <label for="f-place">장소</label>
     <input id="f-place" type="text" maxlength="40" placeholder="예) 인천 ○○횟집 (구월동)">
     <label for="f-note">안내 문구 (선택)</label>
-    <input id="f-note" type="text" maxlength="80" placeholder="비워 두면 확정·예정에 맞는 기본 문구가 나옵니다">
+    <input id="f-note" type="text" maxlength="80" placeholder="비워 두면 확정·조율 중에 맞는 기본 문구가 나옵니다">
     <div class="btns">
       <button id="save" type="button">저장</button>
       <button id="cancel" class="sub" type="button" hidden>수정 취소</button>
@@ -159,6 +177,33 @@ ul.list button{font-size:13px; padding:5px 10px}
     <h2>정해 둔 일정</h2>
     <ul class="list" id="list"></ul>
     <p class="muted" id="empty" style="margin:0">아직 정해 둔 일정이 없습니다. 회원 화면에는 회칙 날짜가 ‘예정’으로 보입니다.</p>
+  </section>
+
+  <section class="box" id="attbox">
+    <h2>출석 체크</h2>
+    <p class="muted" style="margin:0">모임 날짜를 고르고 온 회원을 누르세요. 저장하면 회원 화면 ‘모임 결산’의 참석 명단과 참석률에 반영됩니다.
+      (그 모임의 결제가 은행 거래내역에 들어오면 그 카드에 붙습니다.)</p>
+    <label for="a-date">모임 날짜</label>
+    <input id="a-date" type="date">
+    <div class="chips" id="a-quick"></div>
+    <label>회원 (순번)</label>
+    <div class="checks" id="a-members"></div>
+    <div class="btns">
+      <button class="sub" id="a-all" type="button">모두 참석</button>
+      <button class="sub" id="a-none" type="button">모두 해제</button>
+    </div>
+    <label for="a-guest">게스트 (회원 외)</label>
+    <div class="guestrow">
+      <input id="a-guest" type="text" maxlength="20" placeholder="이름 (모르면 ‘김영민 지인’처럼)">
+      <button class="sub" id="a-gadd" type="button">추가</button>
+    </div>
+    <div class="chips" id="a-guests"></div>
+    <p class="sum" id="a-sum"></p>
+    <div class="btns">
+      <button id="a-save" type="button">출석 저장</button>
+      <button class="danger" id="a-del" type="button" hidden>이 날 출석 기록 지우기</button>
+    </div>
+    <p class="hint">게스트는 참석 명단에 따로 표시되고, 참석률은 회원만으로 계산합니다.</p>
   </section>
 
   <p class="muted"><a href="./">회원 화면 열기 →</a></p>
@@ -180,9 +225,10 @@ const today = () => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; };
 const b64e = s => { let b = ""; new TextEncoder().encode(s).forEach(x => { b += String.fromCharCode(x); }); return btoa(b); };
 const b64d = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g, "")), c => c.charCodeAt(0)));
 
-let token = "", R = null, data = { confirmed: [] }, sha = null, editing = -1;
-/* 상태: 확정 / 예정(조율 중). 예전에 저장한 일정에는 상태가 없으니 확정으로 본다 */
-const stOf = c => (c.status === "예정" ? "예정" : "확정");
+let token = "", DD = null, R = null, data = { confirmed: [] }, sha = null, editing = -1;
+/* 상태: 확정 / 조율(중). 예전에 저장한 일정은 상태가 없거나("확정") "예정"(=조율 중)으로 적혀 있다 */
+const stOf = c => (c.status === "조율" || c.status === "예정" ? "조율" : "확정");
+const tagHtml = st => '<span class="tag' + ({ "확정": ' ok">확정', "조율": ' tune">조율 중' }[st] || '">예정') + '</span>';
 const getSt = () => document.querySelector('input[name="st"]:checked').value;
 const setSt = v => { document.querySelector('input[name="st"][value="' + v + '"]').checked = true; };
 const resetForm = () => { editing = -1; $("f-date").value = ""; $("f-place").value = ""; $("f-note").value = ""; setSt("확정"); };
@@ -196,11 +242,11 @@ function say(text, kind) {
 const headers = t => ({ Authorization: "Bearer " + t, Accept: "application/vnd.github+json",
                         "X-GitHub-Api-Version": "2022-11-28" });
 
-/* 회칙은 회원 화면(index.html)에 들어 있는 것을 그대로 쓴다 — 규칙이 두 군데 있으면 언젠가 어긋난다 */
-async function loadRule() {
+/* 회칙·회원 명단·지난 모임은 회원 화면(index.html)에 들어 있는 것을 그대로 쓴다 — 두 군데 있으면 언젠가 어긋난다 */
+async function loadD() {
   const t = await (await fetch("index.html?t=" + Date.now(), { cache: "no-store" })).text();
   const i = t.indexOf("const D = ");
-  return JSON.parse(t.slice(i + 10, t.indexOf(";\n", i))).meeting_rule;
+  return JSON.parse(t.slice(i + 10, t.indexOf(";\n", i)));
 }
 
 /* 회원 화면과 같은 계산: 확정된 분기는 건너뛴 다음 회칙 날짜 */
@@ -224,10 +270,11 @@ async function loadData() {
   if (token) {
     const r = await fetch(API + "/contents/" + FILE + "?ref=main&t=" + Date.now(), { headers: headers(token), cache: "no-store" });
     if (r.status === 401) { say("열쇠가 맞지 않거나 기한이 지났습니다. 열쇠를 지우고 새로 연결해 주세요.", "err"); }
-    if (r.ok) { const j = await r.json(); sha = j.sha; data = JSON.parse(b64d(j.content)); return; }
+    if (r.ok) { const j = await r.json(); sha = j.sha; data = JSON.parse(b64d(j.content)); data.confirmed = data.confirmed || []; return; }
   }
   const r = await fetch(FILE + "?t=" + Date.now(), { cache: "no-store" });
   data = r.ok ? await r.json() : { confirmed: [] };
+  data.confirmed = data.confirmed || [];
   sha = null;
 }
 
@@ -235,30 +282,121 @@ function render() {
   const list = data.confirmed || [];
   const rule = ruleNext(list), up = upcoming()[0];
   const pick = up && (!rule || ymd(up.c.date) <= rule)
-    ? { d: ymd(up.c.date), time: up.c.time || R.time, place: up.c.place, ok: stOf(up.c) === "확정" }
-    : rule ? { d: rule, time: R.time, place: "", ok: false } : null;
+    ? { d: ymd(up.c.date), time: up.c.time || R.time, place: up.c.place, st: stOf(up.c) }
+    : rule ? { d: rule, time: R.time, place: "", st: "rule" } : null;
   $("now").innerHTML = pick
-    ? '<div><b>' + qname(qkey(pick.d)) + ' 정기모임</b><span class="tag' + (pick.ok ? ' ok">확정' : '">예정') + '</span></div>'
+    ? '<div><b>' + qname(qkey(pick.d)) + ' 정기모임</b>' + tagHtml(pick.st) + '</div>'
       + '<div class="when">' + show(pick.d) + ' <span class="t">' + esc(pick.time || "") + '</span></div>'
       + (pick.place ? '<div>장소 <b>' + esc(pick.place) + '</b></div>' : '')
-      + (pick.place || pick.ok ? '' : '<div class="muted">회칙(분기별 둘째 주 금요일)으로 계산한 날짜입니다.</div>')
+      + (pick.st !== "rule" ? '' : '<div class="muted">회칙(분기별 둘째 주 금요일)으로 계산한 날짜입니다.</div>')
     : '<span class="muted">표시할 정기모임이 없습니다.</span>';
 
   const ups = upcoming();
   $("list").innerHTML = ups.map(x =>
     '<li><span class="d">' + show(ymd(x.c.date)) + ' ' + esc(x.c.time || "") + '</span>'
-    + '<span class="tag' + (stOf(x.c) === "확정" ? ' ok">확정' : '">예정') + '</span>'
+    + tagHtml(stOf(x.c))
     + '<span class="p">' + esc(x.c.place || "장소 미정") + '</span>'
     + '<span class="acts"><button class="sub" data-edit="' + x.i + '">수정</button>'
     + '<button class="danger" data-del="' + x.i + '">삭제</button></span></li>').join("");
   $("empty").hidden = ups.length > 0;
 
   const can = !!token;
-  ["save"].forEach(id => { $(id).disabled = !can; });
+  ["save", "a-save", "a-del"].forEach(id => { $(id).disabled = !can; });
   $("list").querySelectorAll("button").forEach(b => { b.disabled = !can; });
   $("keyon").hidden = !can; $("keyoff").hidden = can;
   fillForm();
+  drawAtt();
 }
+
+/* ── 출석 체크 ──
+   회원은 순번대로, 직함 없이 이름만. 가출 회원은 뺀다(회원 화면의 참석률과 같은 기준).
+   저장은 meeting.json 의 attendance[모임 날짜] = { present, guests } — 회원 화면 '모임 결산'이 바로 읽어 간다. */
+let att = { date: "", present: new Set(), guests: [] };
+const ACTIVE = () => DD.members.filter(m => (DD.roster.gone_names || []).indexOf(m.name) < 0)
+  .sort((a, b) => a.no - b.no);
+const bankMeet = d => (DD.meetings || []).find(m => (m.key || m.start) === d);
+
+function candidates() {
+  // 빠른 선택: 지난 모임(은행 기록) + 관리자 화면에서 정한 일정 중 오늘까지 — 최근 것부터 4개
+  const t = iso(today()), seen = new Set(), out = [];
+  (data.confirmed || []).forEach(c => { if (c.date <= t) out.push({ d: c.date, p: c.place || "" }); });
+  (DD.meetings || []).forEach(m => out.push({ d: m.key || m.start, p: m.place || "" }));
+  return out.sort((a, b) => (a.d < b.d ? 1 : -1)).filter(x => !seen.has(x.d) && seen.add(x.d)).slice(0, 4);
+}
+
+function loadAtt(d) {
+  att.date = d;
+  const a = (data.attendance || {})[d], m = bankMeet(d);
+  if (a) { att.present = new Set(a.present || []); att.guests = (a.guests || []).slice(); }
+  else if (m && m.att) { att.present = new Set(m.att.present); att.guests = []; }   // 예전 설정 파일 기록을 불러와 고칠 수 있게
+  else { att.present = new Set(); att.guests = []; }
+}
+
+function drawAtt() {
+  if (!DD) return;
+  if (!att.date) {
+    const c = candidates()[0];
+    $("a-date").value = c ? c.d : iso(today());
+    loadAtt($("a-date").value);
+  }
+  $("a-quick").innerHTML = candidates().map(c =>
+    '<button type="button" data-d="' + c.d + '"' + (c.d === att.date ? ' class="on"' : '') + '>'
+    + show(ymd(c.d)) + (c.p ? ' ' + esc(c.p) : '') + '</button>').join("");
+  const act = ACTIVE();
+  $("a-members").innerHTML = act.map(m =>
+    '<button type="button" data-n="' + esc(m.name) + '" aria-pressed="' + att.present.has(m.name) + '">'
+    + '<span class="no">' + m.no + '</span>' + esc(m.name) + '</button>').join("");
+  $("a-guests").innerHTML = att.guests.map((g, i) =>
+    '<button type="button" class="guest" data-g="' + i + '" title="누르면 빠집니다">' + esc(g) + ' ✕</button>').join("");
+  const n = act.filter(m => att.present.has(m.name)).length;
+  $("a-sum").innerHTML = show(ymd(att.date)) + ' · 참석 ' + n + '명'
+    + (att.guests.length ? ' · 게스트 ' + att.guests.length + '명' : '')
+    + ' · 미참석 ' + (act.length - n) + '명'
+    + ' · <span class="rate">참석률 ' + (Math.round(n / act.length * 1000) / 10) + '%</span>';
+  $("a-del").hidden = !(data.attendance || {})[att.date];
+}
+
+$("a-date").onchange = () => { if ($("a-date").value) { loadAtt($("a-date").value); drawAtt(); } };
+$("a-quick").onclick = e => { const b = e.target.closest("button"); if (!b) return;
+  $("a-date").value = b.dataset.d; loadAtt(b.dataset.d); drawAtt(); };
+$("a-members").onclick = e => { const b = e.target.closest("button"); if (!b) return;
+  const n = b.dataset.n; att.present.has(n) ? att.present.delete(n) : att.present.add(n); drawAtt(); };
+$("a-all").onclick = () => { ACTIVE().forEach(m => att.present.add(m.name)); drawAtt(); };
+$("a-none").onclick = () => { att.present.clear(); drawAtt(); };
+$("a-gadd").onclick = () => {
+  const g = $("a-guest").value.trim();
+  if (!g) return;
+  if (ACTIVE().some(m => m.name === g)) { say(g + " 님은 회원입니다. 위 회원 목록에서 눌러 주세요.", "err"); return; }
+  if (att.guests.indexOf(g) < 0) att.guests.push(g);
+  $("a-guest").value = ""; drawAtt();
+};
+$("a-guest").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); $("a-gadd").click(); } };
+$("a-guests").onclick = e => { const b = e.target.closest("button"); if (!b) return;
+  att.guests.splice(+b.dataset.g, 1); drawAtt(); };
+
+$("a-save").onclick = async () => {
+  if (!att.date) return say("모임 날짜를 골라 주세요.", "err");
+  if (ymd(att.date) > today()) return say("아직 오지 않은 날짜는 출석 체크할 수 없습니다.", "err");
+  const act = ACTIVE(), present = act.filter(m => att.present.has(m.name)).map(m => m.name);
+  const A = Object.assign({}, data.attendance || {});
+  A[att.date] = { present, guests: att.guests.slice(), saved: new Date().toISOString() };
+  const next = Object.assign({}, data, { attendance: A });
+  $("a-save").disabled = true; say("저장하는 중…", "info");
+  const ok = await put(next, "출석 체크: " + att.date + " · 참석 " + present.length + "명"
+    + (att.guests.length ? " + 게스트 " + att.guests.length + "명" : ""));
+  if (ok) say(show(ymd(att.date)) + " 출석을 저장했습니다. 1~2분 뒤 회원 화면 ‘모임 결산’에 반영됩니다."
+    + (bankMeet(att.date) ? "" : " (이 날 모임 결제가 은행 거래내역에 들어오면 그 카드에 붙습니다.)"), "ok");
+  render();
+};
+
+$("a-del").onclick = async () => {
+  if (!confirm(show(ymd(att.date)) + " 출석 기록을 지울까요?")) return;
+  const A = Object.assign({}, data.attendance || {}); delete A[att.date];
+  say("지우는 중…", "info");
+  if (await put(Object.assign({}, data, { attendance: A }), "출석 기록 삭제: " + att.date))
+    say("출석 기록을 지웠습니다.", "ok");
+  loadAtt(att.date); render();
+};
 
 function fillForm() {
   const list = data.confirmed || [];
@@ -307,13 +445,16 @@ $("save").onclick = async () => {
     entry.replaces = rule ? qkey(rule) : qkey(ymd(date));
     list.push(entry);
   }
-  const next = { confirmed: list.filter(c => ymd(c.date) >= cutoff).sort((a, b) => (a.date < b.date ? -1 : 1)) };
+  // 출석 기록 등 다른 내용은 그대로 두고 일정 목록만 바꾼다
+  const next = Object.assign({}, data,
+    { confirmed: list.filter(c => ymd(c.date) >= cutoff).sort((a, b) => (a.date < b.date ? -1 : 1)) });
+  const label = status === "조율" ? "조율 중" : "확정";
   $("save").disabled = true;
   say("저장하는 중…", "info");
-  const ok = await put(next, "정기모임 " + status + ": " + date + " " + time + (place ? " · " + place : ""));
+  const ok = await put(next, "정기모임 " + label + ": " + date + " " + time + (place ? " · " + place : ""));
   if (ok) {
     resetForm();
-    say("‘" + status + "’으로 저장했습니다. 1~2분 뒤 회원 화면에 반영됩니다.", "ok");
+    say("‘" + label + "’으로 저장했습니다. 1~2분 뒤 회원 화면에 반영됩니다.", "ok");
   }
   render();
 };
@@ -331,8 +472,8 @@ $("list").onclick = async e => {
   }
   if (b.dataset.del) {
     const c = data.confirmed[+b.dataset.del];
-    if (!confirm(show(ymd(c.date)) + " 일정을 지울까요?\n날짜·장소가 지워지고 회원 화면은 회칙 날짜(예정)로 돌아갑니다.\n내용을 남기고 표시만 바꾸려면 ‘수정’에서 확정/예정을 고르세요.")) return;
-    const next = { confirmed: data.confirmed.filter((_, i) => i !== +b.dataset.del) };
+    if (!confirm(show(ymd(c.date)) + " 일정을 지울까요?\n날짜·장소가 지워지고 회원 화면은 회칙 날짜(예정)로 돌아갑니다.\n내용을 남기고 표시만 바꾸려면 ‘수정’에서 확정/조율 중을 고르세요.")) return;
+    const next = Object.assign({}, data, { confirmed: data.confirmed.filter((_, i) => i !== +b.dataset.del) });
     say("지우는 중…", "info");
     if (await put(next, "정기모임 일정 삭제: " + c.date)) say("지웠습니다. 1~2분 뒤 회원 화면이 회칙 날짜로 돌아갑니다.", "ok");
     resetForm(); render();
@@ -364,7 +505,8 @@ $("keyclear").onclick = () => {
 
 (async () => {
   try {
-    R = await loadRule();
+    DD = await loadD();
+    R = DD.meeting_rule;
     await loadData();
     render();
   } catch (e) {
