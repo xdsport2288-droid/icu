@@ -38,8 +38,15 @@
 .adm-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
 .adm-btn{font:inherit; font-size:13.5px; font-weight:600; padding:6px 12px; border-radius:3px; cursor:pointer;
   border:1px solid var(--sea); background:transparent; color:var(--sea); line-height:1.3}
-.adm-btn.sub{border-color:var(--line); color:var(--muted)}
 .att .adm-btn{margin-left:auto}
+.adm-tabs{display:flex; margin:2px 0 12px; border:1px solid var(--sea); border-radius:4px; overflow:hidden}
+.adm-tabs button{flex:1; font:inherit; font-size:15px; font-weight:600; padding:9px 8px; cursor:pointer; border:0;
+  background:transparent; color:var(--sea)}
+.adm-tabs button.on{background:var(--sea); color:var(--surface)}
+.adm-foot{margin-top:20px; padding-top:12px; border-top:1px solid var(--line-2); display:flex; flex-wrap:wrap;
+  align-items:center; gap:6px 12px; font-size:12.5px; color:var(--muted)}
+.adm-foot button{margin-left:auto; font:inherit; font-size:12.5px; background:transparent; border:0; padding:0;
+  color:var(--muted); text-decoration:underline; cursor:pointer}
 .adm-ov{position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.5); display:flex; align-items:flex-end; justify-content:center}
 .adm-sheet{width:100%; max-width:560px; max-height:88vh; overflow:auto; background:var(--surface); color:var(--ink);
   border-radius:10px 10px 0 0; padding:16px 18px 24px; font-size:14.5px}
@@ -159,19 +166,12 @@
   function decorate() {
     const nm = document.getElementById("nextmeet");
     if (nm && !nm.hidden && !nm.querySelector(".adm-row")) {
-      // 카드에 보이는 그 모임을 바로 고친다 — 정해 둔 일정이면 그 일정 수정, 회칙 날짜(예정)면 그 분기 새로 정하기
-      const shown = () => nextMeeting(R, data.confirmed);
+      // 버튼은 [관리자] 하나. 창 안의 [일정]·[참석 체크] 탭으로 오간다.
+      // 모임 당일이면 참석 체크부터, 그 밖에는 카드에 보이는 그 모임의 일정부터 연다.
       const row = el("div", "adm-row");
-      const b1 = el("button", "adm-btn", "일정 수정"); b1.type = "button";
-      b1.onclick = () => {
-        const M = shown(), i = M && M.st !== "rule" ? data.confirmed.findIndex(c => c.date === iso(M.dt)) : -1;
-        openSchedule(i >= 0 ? i : undefined);
-      };
-      const b2 = el("button", "adm-btn", "참석 체크"); b2.type = "button";
-      b2.onclick = () => { const M = shown(); openAttendance(M ? iso(M.dt) : undefined); };
-      // 관리자 메뉴도 화면에 떠 있는 버튼 대신 여기 — 떠 있는 버튼은 창 크기에 따라 가려져 안 보였다
-      const b3 = el("button", "adm-btn sub", "관리자"); b3.type = "button"; b3.onclick = () => menu();
-      row.append(b1, b2, b3); nm.appendChild(row);
+      const b = el("button", "adm-btn", "관리자"); b.type = "button";
+      b.onclick = () => (shownDate() === iso(today()) ? openAttendance(shownDate()) : openSchedule(shownIdx()));
+      row.append(b); nm.appendChild(row);
     }
     // 모임 결산 카드는 최근 모임이 위로 오게 그려져 있다 — D.meetings 를 뒤집은 순서와 같다
     const list = D.meetings.slice().reverse();
@@ -184,23 +184,29 @@
     });
   }
 
-  /* ── 관리자 메뉴(정기모임 카드의 [관리자]) ── */
-  function menu() {
-    const body = el("div", null,
-      '<p class="muted">이 기기에만 보이는 관리 도구입니다. 회원 화면에는 나타나지 않습니다.</p>'
-      + '<div class="adm-btns"><button class="p" data-a="s" type="button">정해 둔 일정 · 새 일정 추가</button>'
-      + '<button class="p" data-a="a" type="button">지난 모임 참석 체크</button></div>'
-      + '<div class="adm-btns"><button class="d" data-a="k" type="button">이 기기에서 열쇠 지우기 (관리자 모드 끄기)</button></div>');
-    body.onclick = e => {
-      const a = (e.target.closest("button") || {}).dataset || {};
-      if (a.a === "s") openSchedule();
-      if (a.a === "a") openAttendance();
-      if (a.a === "k" && confirm("이 기기에서 관리자 열쇠를 지울까요?\n다시 쓰려면 사이트 주소 끝에 #admin 을 붙여 열쇠를 새로 넣어야 합니다.")) {
-        try { localStorage.removeItem(KEY); } catch (e) {}
-        location.hash = ""; location.reload();
-      }
+  /* ── 관리자 창의 [일정]·[참석 체크] 탭과 맨 아래 열쇠 지우기 ── */
+  const shownM = () => nextMeeting(R, data.confirmed);          // 정기모임 카드에 지금 보이는 모임
+  const shownDate = () => { const M = shownM(); return M ? iso(M.dt) : undefined; };
+  const shownIdx = () => {
+    const M = shownM(), i = M && M.st !== "rule" ? data.confirmed.findIndex(c => c.date === iso(M.dt)) : -1;
+    return i >= 0 ? i : undefined;
+  };
+  const tabs = on => '<div class="adm-tabs" role="tablist">'
+    + '<button type="button" role="tab" data-t="s"' + (on === "s" ? ' class="on" aria-selected="true"' : '') + '>일정</button>'
+    + '<button type="button" role="tab" data-t="a"' + (on === "a" ? ' class="on" aria-selected="true"' : '') + '>참석 체크</button></div>';
+  const foot = '<div class="adm-foot"><span>이 버튼들은 이 기기에만 보이고 회원 화면에는 나타나지 않습니다.</span>'
+    + '<button type="button">이 기기에서 열쇠 지우기</button></div>';
+  // 탭을 누르면 다른 쪽 창으로 바꿔 연다. 날짜·일정은 지금 보고 있던 모임을 따라간다.
+  function wire(body, dateForA, idxForS) {
+    body.querySelector(".adm-tabs").onclick = e => {
+      const b = e.target.closest("button"); if (!b || b.classList.contains("on")) return;
+      b.dataset.t === "s" ? openSchedule(idxForS()) : openAttendance(dateForA());
     };
-    sheet("관리자 메뉴", body);
+    body.querySelector(".adm-foot button").onclick = () => {
+      if (!confirm("이 기기에서 관리자 열쇠를 지울까요?\n다시 쓰려면 사이트 주소 끝에 #admin 을 붙여 열쇠를 새로 넣어야 합니다.")) return;
+      try { localStorage.removeItem(KEY); } catch (e) {}
+      location.hash = ""; location.reload();
+    };
   }
 
   /* ── 열쇠 연결(새 기기에서 주소#admin 으로 들어왔을 때) ── */
@@ -254,7 +260,8 @@
     const ed = editIdx != null ? list[editIdx] : null;
     const rule = ruleNext(list);
     const body = el("div", null,
-      '<p class="muted">' + (ed ? (ed.replaces ? qname(ed.replaces) + " 회칙 날짜를 대신하는 일정입니다." : "")
+      tabs("s")
+      + '<p class="muted">' + (ed ? (ed.replaces ? qname(ed.replaces) + " 회칙 날짜를 대신하는 일정입니다." : "")
                              : (rule ? qname(qkey(rule)) + " 회칙 날짜 " + show(rule) + " 대신 정합니다." : "")) + '</p>'
       + '<label class="k">회원 화면 표시</label><div class="adm-seg">'
       + '<label><input type="radio" name="adm-st" value="확정"> 확정</label>'
@@ -270,8 +277,10 @@
           '<li><span class="dt">' + show(ymd(x.c.date)) + ' ' + E(x.c.time) + '</span>' + tag(stOf(x.c))
           + '<span class="pl">' + E(x.c.place || "장소 미정") + '</span><span class="ac">'
           + '<button type="button" data-e="' + x.i + '">수정</button><button type="button" class="del" data-x="' + x.i + '">삭제</button></span></li>').join("") + '</ul>'
-        : '<p class="muted" style="margin-top:6px">아직 없습니다. 회원 화면에는 회칙 날짜가 ‘예정’으로 보입니다.</p>'));
+        : '<p class="muted" style="margin-top:6px">아직 없습니다. 회원 화면에는 회칙 날짜가 ‘예정’으로 보입니다.</p>')
+      + foot);
     sheet(ed ? "정기모임 일정 수정" : "정기모임 일정 정하기", body);
+    wire(body, () => (ed ? ed.date : shownDate()), () => editIdx);
     const f = id => body.querySelector("#" + id);
     body.querySelector('input[name="adm-st"][value="' + (ed ? stOf(ed) : "확정") + '"]').checked = true;
     f("adm-date").value = ed ? ed.date : (rule ? iso(rule) : "");
@@ -333,7 +342,8 @@
     pick(d);
 
     const body = el("div", null,
-      '<label class="k" for="adm-adate">모임 날짜</label><input id="adm-adate" type="date">'
+      tabs("a")
+      + '<label class="k" for="adm-adate">모임 날짜</label><input id="adm-adate" type="date">'
       + '<div class="adm-chips" id="adm-quick"></div>'
       + '<label class="k">회원 (순번)</label><div class="adm-checks" id="adm-mem"></div>'
       + '<div class="adm-btns"><button class="s" id="adm-all" type="button">모두 참석</button>'
@@ -345,8 +355,11 @@
       + '<p class="adm-sum" id="adm-sum"></p>'
       + '<div class="adm-btns"><button class="p" id="adm-asave" type="button">참석 저장</button>'
       + '<button class="d" id="adm-adel" type="button">이 날 참석 기록 지우기</button></div>'
-      + '<p class="muted" style="margin-top:8px">그 모임의 결제가 은행 거래내역에 들어오면 모임 결산 카드에 붙습니다.</p>');
+      + '<p class="muted" style="margin-top:8px">그 모임의 결제가 은행 거래내역에 들어오면 모임 결산 카드에 붙습니다.</p>'
+      + foot);
     sheet("참석 체크", body);
+    // [일정] 탭: 지금 고른 날짜에 정해 둔 일정이 있으면 그 일정, 없으면 카드에 보이는 모임
+    wire(body, () => d, () => { const i = data.confirmed.findIndex(c => c.date === d); return i >= 0 ? i : shownIdx(); });
     const f = id => body.querySelector("#" + id);
 
     function draw() {

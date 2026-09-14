@@ -649,10 +649,10 @@ input[type=search]{flex:1 1 150px; min-width:130px; font:inherit; font-size:13px
 }
 .nmhead{display:flex; align-items:center; gap:10px 14px; flex-wrap:wrap}
 .nmkey{font-size:18px; font-weight:700; letter-spacing:-.01em; color:var(--sea)}
+/* D-day는 제목 옆 작은 표, 확정·조율 중·예정은 오른쪽 큰 표 — 회원이 먼저 봐야 할 건 '믿고 움직여도 되는 날짜인지'다 */
 .nmdday{
-  margin-left:auto; font-family:"IBM Plex Mono",monospace; font-size:16.5px;
-  font-weight:700; letter-spacing:.04em; color:var(--rust);
-  border:1.5px solid var(--rust); padding:3px 11px; border-radius:2px; white-space:nowrap;
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:600; letter-spacing:.04em;
+  color:var(--rust); border:1px solid var(--rust); padding:2px 7px; border-radius:2px; white-space:nowrap;
 }
 .nmdday.near{background:var(--rust); border-color:var(--rust); color:var(--surface)}
 .nmwhen{margin:9px 0 0; display:flex; align-items:baseline; gap:4px 13px; flex-wrap:wrap}
@@ -664,8 +664,8 @@ input[type=search]{flex:1 1 150px; min-width:130px; font:inherit; font-size:13px
 .nmnote{margin:9px 0 0; font-size:13px; color:var(--muted); font-weight:400}
 /* 세 단계를 페이지에 이미 쓰는 세 색으로만 — 예정(회칙 날짜) 파랑 · 조율 중 주황 · 확정 초록.
    색을 더 늘리면 한 화면이 산만해진다. */
-.nmstate{font-size:11.5px; font-weight:600; letter-spacing:.02em; padding:2px 7px; border-radius:2px;
-  border:1px solid var(--sea); color:var(--sea); background:var(--sea-soft); white-space:nowrap}
+.nmstate{margin-left:auto; font-size:16.5px; font-weight:700; letter-spacing:.02em; padding:3px 11px; border-radius:2px;
+  border:1.5px solid var(--sea); color:var(--sea); background:var(--sea-soft); white-space:nowrap}
 .nmstate.tune{border-color:var(--rust); color:var(--rust); background:var(--rust-soft)}
 .nmstate.ok{border-color:var(--ok); color:var(--ok); background:var(--ok-soft)}
 .nmplace{margin:7px 0 0; display:flex; align-items:baseline; gap:4px 10px; flex-wrap:wrap}
@@ -1084,8 +1084,8 @@ function drawMeeting(R, confirmed) {
   $("nextmeet").innerHTML =
       '<div class="nmhead"><span class="nmkey">' + (dt.getFullYear() % 100) + '년 '
     + (Math.floor(dt.getMonth() / 3) + 1) + '분기 정기모임</span>'
-    + '<span class="nmstate ' + M.st + '">' + { rule: "예정", tune: "조율 중", ok: "확정" }[M.st] + '</span>'
-    + '<span class="nmdday' + (days <= 7 ? " near" : "") + '">' + (days === 0 ? "오늘" : "D-" + days) + '</span></div>'
+    + '<span class="nmdday' + (days <= 7 ? " near" : "") + '">' + (days === 0 ? "오늘" : "D-" + days) + '</span>'
+    + '<span class="nmstate ' + M.st + '">' + { rule: "예정", tune: "조율 중", ok: "확정" }[M.st] + '</span></div>'
     + '<p class="nmwhen"><span class="nmdate">' + dt.getFullYear() + '. '
     + pad(dt.getMonth() + 1) + '. ' + pad(dt.getDate()) + '</span>'
     + '<span class="nmdow">' + "일월화수목금토"[dt.getDay()] + '요일</span>'
