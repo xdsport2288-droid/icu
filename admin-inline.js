@@ -161,9 +161,16 @@
   function decorate() {
     const nm = document.getElementById("nextmeet");
     if (nm && !nm.hidden && !nm.querySelector(".adm-row")) {
+      // 카드에 보이는 그 모임을 바로 고친다 — 정해 둔 일정이면 그 일정 수정, 회칙 날짜(예정)면 그 분기 새로 정하기
+      const shown = () => nextMeeting(R, data.confirmed);
       const row = el("div", "adm-row");
-      const b1 = el("button", "adm-btn", "일정 수정"); b1.type = "button"; b1.onclick = () => openSchedule();
-      const b2 = el("button", "adm-btn", "참석 체크"); b2.type = "button"; b2.onclick = () => openAttendance();
+      const b1 = el("button", "adm-btn", "일정 수정"); b1.type = "button";
+      b1.onclick = () => {
+        const M = shown(), i = M && M.st !== "rule" ? data.confirmed.findIndex(c => c.date === iso(M.dt)) : -1;
+        openSchedule(i >= 0 ? i : undefined);
+      };
+      const b2 = el("button", "adm-btn", "참석 체크"); b2.type = "button";
+      b2.onclick = () => { const M = shown(); openAttendance(M ? iso(M.dt) : undefined); };
       row.append(b1, b2); nm.appendChild(row);
     }
     // 모임 결산 카드는 최근 모임이 위로 오게 그려져 있다 — D.meetings 를 뒤집은 순서와 같다
