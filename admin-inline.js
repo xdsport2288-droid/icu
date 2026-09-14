@@ -38,10 +38,8 @@
 .adm-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
 .adm-btn{font:inherit; font-size:13.5px; font-weight:600; padding:6px 12px; border-radius:3px; cursor:pointer;
   border:1px solid var(--sea); background:transparent; color:var(--sea); line-height:1.3}
+.adm-btn.sub{border-color:var(--line); color:var(--muted)}
 .att .adm-btn{margin-left:auto}
-.adm-chip{position:fixed; left:14px; bottom:14px; z-index:50; font:600 13px/1 "IBM Plex Sans KR","Malgun Gothic",sans-serif;
-  padding:10px 13px; border-radius:18px; border:0; background:var(--sea); color:var(--surface); cursor:pointer;
-  box-shadow:0 2px 10px rgba(0,0,0,.28)}
 .adm-ov{position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.5); display:flex; align-items:flex-end; justify-content:center}
 .adm-sheet{width:100%; max-width:560px; max-height:88vh; overflow:auto; background:var(--surface); color:var(--ink);
   border-radius:10px 10px 0 0; padding:16px 18px 24px; font-size:14.5px}
@@ -171,7 +169,9 @@
       };
       const b2 = el("button", "adm-btn", "참석 체크"); b2.type = "button";
       b2.onclick = () => { const M = shown(); openAttendance(M ? iso(M.dt) : undefined); };
-      row.append(b1, b2); nm.appendChild(row);
+      // 관리자 메뉴도 화면에 떠 있는 버튼 대신 여기 — 떠 있는 버튼은 창 크기에 따라 가려져 안 보였다
+      const b3 = el("button", "adm-btn sub", "관리자"); b3.type = "button"; b3.onclick = () => menu();
+      row.append(b1, b2, b3); nm.appendChild(row);
     }
     // 모임 결산 카드는 최근 모임이 위로 오게 그려져 있다 — D.meetings 를 뒤집은 순서와 같다
     const list = D.meetings.slice().reverse();
@@ -184,28 +184,23 @@
     });
   }
 
-  /* ── 관리자 메뉴(왼쪽 아래 버튼) ── */
-  function chip() {
-    if (document.querySelector(".adm-chip")) return;
-    const c = el("button", "adm-chip", "관리자"); c.type = "button"; c.setAttribute("aria-label", "관리자 메뉴");
-    c.onclick = () => {
-      const body = el("div", null,
-        '<p class="muted">이 기기에만 보이는 관리 도구입니다. 회원 화면에는 나타나지 않습니다.</p>'
-        + '<div class="adm-btns"><button class="p" data-a="s" type="button">정기모임 일정</button>'
-        + '<button class="p" data-a="a" type="button">참석 체크</button></div>'
-        + '<div class="adm-btns"><button class="d" data-a="k" type="button">이 기기에서 열쇠 지우기 (관리자 모드 끄기)</button></div>');
-      body.onclick = e => {
-        const a = (e.target.closest("button") || {}).dataset || {};
-        if (a.a === "s") openSchedule();
-        if (a.a === "a") openAttendance();
-        if (a.a === "k" && confirm("이 기기에서 관리자 열쇠를 지울까요?\n다시 쓰려면 사이트 주소 끝에 #admin 을 붙여 열쇠를 새로 넣어야 합니다.")) {
-          try { localStorage.removeItem(KEY); } catch (e) {}
-          location.hash = ""; location.reload();
-        }
-      };
-      sheet("관리자 메뉴", body);
+  /* ── 관리자 메뉴(정기모임 카드의 [관리자]) ── */
+  function menu() {
+    const body = el("div", null,
+      '<p class="muted">이 기기에만 보이는 관리 도구입니다. 회원 화면에는 나타나지 않습니다.</p>'
+      + '<div class="adm-btns"><button class="p" data-a="s" type="button">정해 둔 일정 · 새 일정 추가</button>'
+      + '<button class="p" data-a="a" type="button">지난 모임 참석 체크</button></div>'
+      + '<div class="adm-btns"><button class="d" data-a="k" type="button">이 기기에서 열쇠 지우기 (관리자 모드 끄기)</button></div>');
+    body.onclick = e => {
+      const a = (e.target.closest("button") || {}).dataset || {};
+      if (a.a === "s") openSchedule();
+      if (a.a === "a") openAttendance();
+      if (a.a === "k" && confirm("이 기기에서 관리자 열쇠를 지울까요?\n다시 쓰려면 사이트 주소 끝에 #admin 을 붙여 열쇠를 새로 넣어야 합니다.")) {
+        try { localStorage.removeItem(KEY); } catch (e) {}
+        location.hash = ""; location.reload();
+      }
     };
-    document.body.appendChild(c);
+    sheet("관리자 메뉴", body);
   }
 
   /* ── 열쇠 연결(새 기기에서 주소#admin 으로 들어왔을 때) ── */
@@ -412,7 +407,7 @@
       toast("관리 정보를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.", "err");
       return;
     }
-    chip(); repaint();
+    repaint();
     // 회원 화면이 meeting.json 을 늦게 받아 다시 그리면 버튼이 사라지므로 다시 단다
     ["nextmeet", "meets"].forEach(id => {
       const t = document.getElementById(id);
