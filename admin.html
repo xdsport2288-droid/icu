@@ -57,7 +57,7 @@ h1{margin:12px 0 0; font-size:23px; font-weight:700; letter-spacing:-.01em}
   color:var(--sea); background:var(--sea-soft); white-space:nowrap; margin-left:6px; vertical-align:2px}
 .tag.tune{border-color:var(--rust); color:var(--rust); background:var(--rust-soft)}
 .tag.ok{border-color:var(--ok); color:var(--ok); background:var(--ok-soft)}
-/* 출석 체크 — 회원 순번대로 누르는 버튼. 누르면 초록(참석) */
+/* 참석 체크 — 회원 순번대로 누르는 버튼. 누르면 초록(참석) */
 .checks{display:grid; grid-template-columns:repeat(auto-fill,minmax(128px,1fr)); gap:8px; margin-top:6px}
 .checks button{display:flex; align-items:center; gap:8px; padding:11px 12px; font-size:15.5px; text-align:left;
   background:var(--surface-2); color:var(--ink); border:1px solid var(--line)}
@@ -72,7 +72,11 @@ h1{margin:12px 0 0; font-size:23px; font-weight:700; letter-spacing:-.01em}
 .guestrow{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:end}
 .guestrow button{margin-top:4px}
 .sum{margin:12px 0 0; font-weight:600; color:var(--ink-2)}
-.sum .rate{font-family:"IBM Plex Mono",monospace; color:var(--sea)}
+/* 회원 화면 모임 결산과 같은 색 — 참석(게스트 포함) 초록 · 미참석 파랑 · 참석률 주황, 전원 참석이면 초록 */
+.sum .yes{color:var(--ok)}
+.sum .no{color:var(--sea)}
+.sum .rate{font-family:"IBM Plex Mono",monospace; color:var(--rust)}
+.sum .rate.full{color:var(--ok)}
 .when{font-family:"IBM Plex Mono",monospace; font-size:18px; font-weight:700; font-variant-numeric:tabular-nums}
 .when .t{color:var(--sea)}
 ol.steps{margin:6px 0 10px; padding-left:20px; color:var(--ink-2)}
@@ -118,7 +122,7 @@ ul.list button{font-size:13px; padding:5px 10px}
   <header>
     <span class="owner">ICU</span>
     <h1>정기모임 관리</h1>
-    <p class="lede">관리자 전용 화면입니다. 여기서 정한 정기모임 일정과 출석 체크가 회원 화면에 1~2분 안에 반영됩니다.</p>
+    <p class="lede">관리자 전용 화면입니다. 여기서 정한 정기모임 일정과 참석 체크가 회원 화면에 1~2분 안에 반영됩니다.</p>
   </header>
 
   <p class="msg" id="msg" role="status" hidden></p>
@@ -180,7 +184,7 @@ ul.list button{font-size:13px; padding:5px 10px}
   </section>
 
   <section class="box" id="attbox">
-    <h2>출석 체크</h2>
+    <h2>참석 체크</h2>
     <p class="muted" style="margin:0">모임 날짜를 고르고 온 회원을 누르세요. 저장하면 회원 화면 ‘모임 결산’의 참석 명단과 참석률에 반영됩니다.
       (그 모임의 결제가 은행 거래내역에 들어오면 그 카드에 붙습니다.)</p>
     <label for="a-date">모임 날짜</label>
@@ -200,8 +204,8 @@ ul.list button{font-size:13px; padding:5px 10px}
     <div class="chips" id="a-guests"></div>
     <p class="sum" id="a-sum"></p>
     <div class="btns">
-      <button id="a-save" type="button">출석 저장</button>
-      <button class="danger" id="a-del" type="button" hidden>이 날 출석 기록 지우기</button>
+      <button id="a-save" type="button">참석 저장</button>
+      <button class="danger" id="a-del" type="button" hidden>이 날 참석 기록 지우기</button>
     </div>
     <p class="hint">게스트는 참석 명단에 따로 표시되고, 참석률은 회원만으로 계산합니다.</p>
   </section>
@@ -308,7 +312,7 @@ function render() {
   drawAtt();
 }
 
-/* ── 출석 체크 ──
+/* ── 참석 체크 ──
    회원은 순번대로, 직함 없이 이름만. 가출 회원은 뺀다(회원 화면의 참석률과 같은 기준).
    저장은 meeting.json 의 attendance[모임 날짜] = { present, guests } — 회원 화면 '모임 결산'이 바로 읽어 간다. */
 let att = { date: "", present: new Set(), guests: [] };
@@ -349,10 +353,11 @@ function drawAtt() {
   $("a-guests").innerHTML = att.guests.map((g, i) =>
     '<button type="button" class="guest" data-g="' + i + '" title="누르면 빠집니다">' + esc(g) + ' ✕</button>').join("");
   const n = act.filter(m => att.present.has(m.name)).length;
-  $("a-sum").innerHTML = show(ymd(att.date)) + ' · 참석 ' + n + '명'
-    + (att.guests.length ? ' · 게스트 ' + att.guests.length + '명' : '')
-    + ' · 미참석 ' + (act.length - n) + '명'
-    + ' · <span class="rate">참석률 ' + (Math.round(n / act.length * 1000) / 10) + '%</span>';
+  $("a-sum").innerHTML = show(ymd(att.date)) + ' · <span class="yes">참석 ' + n + '명</span>'
+    + (att.guests.length ? ' · <span class="yes">게스트 ' + att.guests.length + '명</span>' : '')
+    + ' · <span class="no">미참석 ' + (act.length - n) + '명</span>'
+    + ' · <span class="rate' + (n === act.length ? ' full' : '') + '">참석률 '
+    + (Math.round(n / act.length * 1000) / 10) + '%</span>';
   $("a-del").hidden = !(data.attendance || {})[att.date];
 }
 
@@ -376,25 +381,25 @@ $("a-guests").onclick = e => { const b = e.target.closest("button"); if (!b) ret
 
 $("a-save").onclick = async () => {
   if (!att.date) return say("모임 날짜를 골라 주세요.", "err");
-  if (ymd(att.date) > today()) return say("아직 오지 않은 날짜는 출석 체크할 수 없습니다.", "err");
+  if (ymd(att.date) > today()) return say("아직 오지 않은 날짜는 참석 체크할 수 없습니다.", "err");
   const act = ACTIVE(), present = act.filter(m => att.present.has(m.name)).map(m => m.name);
   const A = Object.assign({}, data.attendance || {});
   A[att.date] = { present, guests: att.guests.slice(), saved: new Date().toISOString() };
   const next = Object.assign({}, data, { attendance: A });
   $("a-save").disabled = true; say("저장하는 중…", "info");
-  const ok = await put(next, "출석 체크: " + att.date + " · 참석 " + present.length + "명"
+  const ok = await put(next, "참석 체크: " + att.date + " · 참석 " + present.length + "명"
     + (att.guests.length ? " + 게스트 " + att.guests.length + "명" : ""));
-  if (ok) say(show(ymd(att.date)) + " 출석을 저장했습니다. 1~2분 뒤 회원 화면 ‘모임 결산’에 반영됩니다."
+  if (ok) say(show(ymd(att.date)) + " 참석을 저장했습니다. 1~2분 뒤 회원 화면 ‘모임 결산’에 반영됩니다."
     + (bankMeet(att.date) ? "" : " (이 날 모임 결제가 은행 거래내역에 들어오면 그 카드에 붙습니다.)"), "ok");
   render();
 };
 
 $("a-del").onclick = async () => {
-  if (!confirm(show(ymd(att.date)) + " 출석 기록을 지울까요?")) return;
+  if (!confirm(show(ymd(att.date)) + " 참석 기록을 지울까요?")) return;
   const A = Object.assign({}, data.attendance || {}); delete A[att.date];
   say("지우는 중…", "info");
-  if (await put(Object.assign({}, data, { attendance: A }), "출석 기록 삭제: " + att.date))
-    say("출석 기록을 지웠습니다.", "ok");
+  if (await put(Object.assign({}, data, { attendance: A }), "참석 기록 삭제: " + att.date))
+    say("참석 기록을 지웠습니다.", "ok");
   loadAtt(att.date); render();
 };
 
@@ -445,7 +450,7 @@ $("save").onclick = async () => {
     entry.replaces = rule ? qkey(rule) : qkey(ymd(date));
     list.push(entry);
   }
-  // 출석 기록 등 다른 내용은 그대로 두고 일정 목록만 바꾼다
+  // 참석 기록 등 다른 내용은 그대로 두고 일정 목록만 바꾼다
   const next = Object.assign({}, data,
     { confirmed: list.filter(c => ymd(c.date) >= cutoff).sort((a, b) => (a.date < b.date ? -1 : 1)) });
   const label = status === "조율" ? "조율 중" : "확정";
