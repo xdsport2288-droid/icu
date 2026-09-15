@@ -430,4 +430,6 @@
   }
 
   if (token) start(); else openKey();
+  // 열쇠 연결 창을 닫았다가 ICU 표지 5번 누르기(#admin)로 다시 부른 경우
+  window.addEventListener("hashchange", () => { if (location.hash === "#admin" && !token) openKey(); });
 })();
