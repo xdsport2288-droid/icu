@@ -200,13 +200,12 @@
       b.onclick = () => (shownDate() === iso(today()) ? openAttendance(shownDate()) : openSchedule(shownIdx()));
       row.append(b); nm.appendChild(row);
     }
-    // 모임 결산 카드는 최근 모임이 위로 오게 그려져 있다 — D.meetings 를 뒤집은 순서와 같다
-    const list = D.meetings.slice().reverse();
-    document.querySelectorAll("#meets article").forEach((a, i) => {
-      const att = a.querySelector(".att"), m = list[i];
-      if (!att || !m || att.querySelector(".adm-btn")) return;
+    // 모임 결산 카드마다 모임 날짜(data-key)가 붙어 있다. '결제 내역 반영 전' 카드도 같다.
+    document.querySelectorAll("#meets article").forEach(a => {
+      const att = a.querySelector(".att"), k = a.dataset.key;
+      if (!att || !k || att.querySelector(".adm-btn")) return;
       const b = el("button", "adm-btn", "참석 체크"); b.type = "button";
-      b.onclick = () => openAttendance(m.key || m.start);
+      b.onclick = () => openAttendance(k);
       // 명단이 있으면 맨 아래 오른쪽(휴대폰에서 첫 줄에 넣으면 줄이 넘쳐 요약과 명단 사이가 벌어진다), '미기록'이면 그 옆
       (att.children.length > 1 ? att : att.querySelector(".att-top") || att).appendChild(b);
     });
