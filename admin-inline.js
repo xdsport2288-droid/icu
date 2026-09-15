@@ -74,6 +74,11 @@
 .adm-chk{display:flex; align-items:center; gap:8px; margin-top:12px; font-weight:600; cursor:pointer}
 .adm-chk input{width:18px; height:18px; margin:0}
 .adm-sheet [hidden]{display:none !important}
+.adm-clr{position:relative; display:block; min-width:0}
+.adm-clr input{padding-right:42px !important}
+.adm-x{position:absolute; top:4px; bottom:0; right:0; width:42px; display:flex; align-items:center; justify-content:center;
+  font:inherit; font-size:15px; color:var(--muted); background:transparent; border:0; cursor:pointer; padding:0}
+.adm-clr input:placeholder-shown + .adm-x{display:none}
 .adm-btns{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px}
 .adm-sheet button.p{font:inherit; font-size:15px; font-weight:600; padding:10px 16px; border-radius:3px; cursor:pointer;
   border:1px solid var(--sea); background:var(--sea); color:var(--surface)}
@@ -134,6 +139,13 @@
     s.setAttribute("role", "dialog"); s.setAttribute("aria-label", title);
     s.appendChild(el("div", "hd", '<h3>' + E(title) + '</h3><button class="x" type="button" aria-label="닫기">✕</button>'));
     s.appendChild(body);
+    // 글자 칸마다 한 번에 지우는 ✕ — 글자가 있을 때만 보인다(placeholder 가 보이면 CSS 로 숨김)
+    s.querySelectorAll('input[type=text], input[type=password]').forEach(inp => {
+      const w = el("span", "adm-clr"), x = el("button", "adm-x", "✕");
+      x.type = "button"; x.setAttribute("aria-label", "지우기"); x.tabIndex = -1;
+      inp.parentNode.insertBefore(w, inp); w.append(inp, x);
+      x.onclick = () => { inp.value = ""; inp.dispatchEvent(new Event("input", { bubbles: true })); inp.focus(); };
+    });
     ov.appendChild(s);
     ov.addEventListener("click", e => { if (e.target === ov || e.target.closest(".x")) close(); });
     document.body.appendChild(ov);
