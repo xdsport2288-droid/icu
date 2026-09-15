@@ -108,8 +108,9 @@
 .adm-chips button.guest{background:var(--ok-soft); color:var(--ok); border-color:var(--ok)}
 .adm-grow{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:end}
 .adm-sum{margin:12px 0 0; font-weight:600; color:var(--ink-2)}
-.adm-sum .yes{color:var(--ok)} .adm-sum .no{color:var(--sea)}
+.adm-sum .yes{color:var(--ok)} .adm-sum .no{color:var(--rust)}
 .adm-sum .rate{font-family:"IBM Plex Mono",monospace; color:var(--rust)} .adm-sum .rate.full{color:var(--ok)}
+.adm-sum .rate.mid{color:var(--sea)}
 .adm-toast{position:fixed; left:50%; bottom:70px; transform:translateX(-50%); z-index:70; max-width:92vw;
   padding:10px 14px; border-radius:6px; font-weight:600; font-size:14px; box-shadow:0 2px 10px rgba(0,0,0,.3)}
 .adm-toast.ok{background:var(--ok-soft); color:var(--ok)} .adm-toast.err{background:var(--rust-soft); color:var(--rust)}
@@ -189,7 +190,8 @@
       if (!att || !m || att.querySelector(".adm-btn")) return;
       const b = el("button", "adm-btn", "참석 체크"); b.type = "button";
       b.onclick = () => openAttendance(m.key || m.start);
-      att.appendChild(b);
+      // 명단이 있으면 맨 아래 오른쪽(휴대폰에서 첫 줄에 넣으면 줄이 넘쳐 요약과 명단 사이가 벌어진다), '미기록'이면 그 옆
+      (att.children.length > 1 ? att : att.querySelector(".att-top") || att).appendChild(b);
     });
   }
 
@@ -407,11 +409,11 @@
       f("adm-mem").innerHTML = act.map(m => '<button type="button" data-n="' + E(m.name) + '" aria-pressed="' + present.has(m.name) + '">'
         + '<span class="no">' + m.no + '</span>' + E(m.name) + '</button>').join("");
       f("adm-guests").innerHTML = guests.map((g, i) => '<button type="button" class="guest" data-g="' + i + '">' + E(g) + ' ✕</button>').join("");
-      const n = act.filter(m => present.has(m.name)).length;
+      const n = act.filter(m => present.has(m.name)).length, r = Math.round(n / act.length * 1000) / 10;
       f("adm-sum").innerHTML = show(ymd(d)) + ' · <span class="yes">참석 ' + n + '명</span>'
         + (guests.length ? ' · <span class="yes">게스트 ' + guests.length + '명</span>' : '')
         + ' · <span class="no">미참석 ' + (act.length - n) + '명</span>'
-        + ' · <span class="rate' + (n === act.length ? ' full' : '') + '">참석률 ' + (Math.round(n / act.length * 1000) / 10) + '%</span>';
+        + ' · <span class="rate ' + (r >= 100 ? "full" : r >= 50 ? "mid" : "") + '">참석률 ' + r.toFixed(1) + '%</span>';
       f("adm-adel").hidden = !data.attendance[d];
     }
     draw();

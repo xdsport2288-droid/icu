@@ -825,12 +825,17 @@ table.eqt tfoot td.now{background:var(--sea); color:var(--surface)}
   letter-spacing:.05em}
 .mplace{font-size:13px; color:var(--muted)}
 .att{padding:10px 16px; border-top:1px solid var(--line-2); background:var(--surface-2);
-  font-size:13px; color:var(--muted); display:flex; gap:6px 14px; flex-wrap:wrap}
-.att .rate{font-family:"IBM Plex Mono",monospace; font-weight:600}
-/* 인원(참석·게스트·미참석)과 참석률은 흰 글씨(본문 색), 이름만 색으로 — 참석·게스트 초록 · 미참석 파랑 */
+  font-size:13px; color:var(--muted); display:flex; flex-direction:column; gap:5px}
+.att-top{display:flex; align-items:center; flex-wrap:wrap; gap:4px 10px}
+.att-top .sep{color:var(--faint)}
+/* 인원은 흰 글씨(본문 색), 미참석만 주황. 이름: 참석·게스트 초록 · 미참석 주황 */
+.att b{font-weight:600; color:var(--ink)}
+.att b.ab, .att .no{color:var(--rust)}
 .att .yes, .att .guest{color:var(--ok)}
-.att .no{color:var(--sea)}
-.att b, .att .rate{font-weight:600; color:var(--ink)}
+/* 참석률: 100% 초록 · 50% 이상 파랑 · 50% 미만 주황 */
+.att .rate{font-family:"IBM Plex Mono",monospace; font-weight:600; color:var(--rust)}
+.att .rate.full{color:var(--ok)}
+.att .rate.mid{color:var(--sea)}
 
 footer{margin-top:56px; padding-top:18px; border-top:2px solid var(--ink);
   font-size:14.5px; color:var(--ink-2); font-weight:400; line-height:1.8}
@@ -1591,6 +1596,20 @@ function attOf(mt, A) {
   return { present, absent: ACTIVE.filter(n => present.indexOf(n) < 0), guests: a.guests || [],
            rate: Math.round(present.length / ACTIVE.length * 1000) / 10 };
 }
+/* 첫 줄은 '참석 N명 / 미참석 N명  참석률 xx.x%', 다음 줄부터 참석자 이름 · 미참석자 · 게스트.
+   참석률 색: 100% 초록 · 50% 이상 파랑 · 50% 미만 주황 */
+function attHtml(att) {
+  const r = Number(att.rate), rc = r >= 100 ? "full" : r >= 50 ? "mid" : "low";
+  return '<div class="att"><div class="att-top"><b>참석 ' + att.present.length + '명</b><span class="sep">/</span>'
+    + '<b class="ab">미참석 ' + att.absent.length + '명</b>'
+    + '<span class="rate ' + rc + '">참석률 ' + r.toFixed(1) + '%</span></div>'
+    + (att.present.length ? '<div class="yes">' + esc(att.present.join(", ")) + '</div>' : '')
+    + (att.absent.length ? '<div class="no"><b class="ab">미참석 ' + att.absent.length + '명</b> '
+        + esc(att.absent.join(", ")) + '</div>' : '')
+    + (att.guests.length ? '<div class="guest"><b>게스트 ' + att.guests.length + '명</b> '
+        + esc(att.guests.join(", ")) + '</div>' : '')
+    + '</div>';
+}
 function drawMeets(A, C) {
   const placeOf = mt => {
     const c = C.find(x => x.date === (mt.key || mt.start) && x.place);
@@ -1614,16 +1633,8 @@ function drawMeets(A, C) {
                 + ' 업소에 직접 낸 ' + won(v.cr)
                 + '원을 더한 <b>실사용 ' + won(v.o + v.cr) + '원</b></em>' : '') + '</span>'
       + '<span class="vv">' + won(v.o) + '</span></div>').join("")
-  + (att
-      ? '<div class="att"><span class="yes"><b>참석 ' + att.present.length + '명</b> '
-        + esc(att.present.join(", ")) + '</span>'
-        + (att.guests.length ? ' <span class="guest"><b>게스트 ' + att.guests.length + '명</b> '
-            + esc(att.guests.join(", ")) + '</span>' : '')
-        + (att.absent.length ? ' <span class="no"><b>미참석 '
-            + att.absent.length + '명</b> ' + esc(att.absent.join(", "))
-            + '</span>' : '')
-        + ' <span class="rate' + (att.absent.length ? '' : ' full') + '">참석률 ' + att.rate + '%</span></div>'
-      : '<div class="att"><span class="mplace">참석 명단 미기록</span></div>')
+  + (att ? attHtml(att)
+      : '<div class="att"><div class="att-top"><span class="mplace">참석 명단 미기록</span></div></div>')
   + '</article>'); }).join("");
 }
 drawMeets(D.attendance || {}, (D.meeting_rule && D.meeting_rule.confirmed) || []);
