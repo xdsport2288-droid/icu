@@ -26,6 +26,11 @@
   const today = () => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; };
   const qkey = d => d.getFullYear() + "-Q" + (Math.floor(d.getMonth() / 3) + 1);
   const qname = k => k.slice(2, 4) + "년 " + k.slice(-1) + "분기";
+  // 날짜 칸이 "YYYY-MM"이면 달만 정한 일정(날짜 미정, 상태는 언제나 조율 중)
+  const isMonth = s => /^\d{4}-\d{2}$/.test(s || "");
+  const firstOf = c => ymd(isMonth(c.date) ? c.date + "-01" : c.date);
+  const lastOf = c => { const d = firstOf(c); return isMonth(c.date) ? new Date(d.getFullYear(), d.getMonth() + 1, 0) : d; };
+  const label = c => isMonth(c.date) ? c.date.slice(0, 4) + "." + c.date.slice(5) + "월 중 (날짜 미정)" : show(ymd(c.date));
   const b64e = s => { let b = ""; new TextEncoder().encode(s).forEach(x => { b += String.fromCharCode(x); }); return btoa(b); };
   const b64d = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g, "")), c => c.charCodeAt(0)));
   const headers = t => ({ Authorization: "Bearer " + t, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" });
@@ -55,16 +60,20 @@
 .adm-sheet .hd .x{margin-left:auto; font-size:18px; background:transparent; border:0; color:var(--muted); cursor:pointer; padding:4px 8px}
 .adm-sheet .muted{color:var(--muted); font-size:13px; margin:0}
 .adm-sheet label.k{display:block; margin-top:12px; font-size:13px; font-weight:600; color:var(--muted)}
-.adm-sheet input[type=text], .adm-sheet input[type=date], .adm-sheet input[type=time], .adm-sheet input[type=password]{
+.adm-sheet input[type=text], .adm-sheet input[type=date], .adm-sheet input[type=month], .adm-sheet input[type=time], .adm-sheet input[type=password]{
   display:block; width:100%; min-width:0; margin-top:4px; padding:10px 10px; font:inherit; font-size:16px; color:var(--ink);
   background:var(--surface-2); border:1px solid var(--line); border-radius:3px; box-sizing:border-box}
-.adm-sheet input[type=date], .adm-sheet input[type=time]{font-family:"IBM Plex Mono",monospace; font-size:15px; padding:10px 6px}
+.adm-sheet input[type=date], .adm-sheet input[type=month], .adm-sheet input[type=time]{font-family:"IBM Plex Mono",monospace; font-size:15px; padding:10px 6px}
 .adm-two{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0 12px}
 .adm-two > div{min-width:0}
 .adm-seg{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px}
 .adm-seg label{display:flex; align-items:center; gap:6px; padding:8px 12px; font-weight:600; border:1px solid var(--line);
   border-radius:3px; background:var(--surface-2); cursor:pointer}
 .adm-seg label:has(input:checked){border-color:var(--sea); background:var(--sea-soft)}
+.adm-seg label:has(input:disabled){opacity:.45; cursor:not-allowed}
+.adm-chk{display:flex; align-items:center; gap:8px; margin-top:12px; font-weight:600; cursor:pointer}
+.adm-chk input{width:18px; height:18px; margin:0}
+.adm-sheet [hidden]{display:none !important}
 .adm-btns{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px}
 .adm-sheet button.p{font:inherit; font-size:15px; font-weight:600; padding:10px 16px; border-radius:3px; cursor:pointer;
   border:1px solid var(--sea); background:var(--sea); color:var(--surface)}
@@ -186,9 +195,9 @@
 
   /* ── 관리자 창의 [일정]·[참석 체크] 탭과 맨 아래 열쇠 지우기 ── */
   const shownM = () => nextMeeting(R, data.confirmed);          // 정기모임 카드에 지금 보이는 모임
-  const shownDate = () => { const M = shownM(); return M ? iso(M.dt) : undefined; };
+  const shownDate = () => { const M = shownM(); return M && !M.month ? iso(M.dt) : undefined; };   // 달만 정한 일정은 참석 체크할 날짜가 없다
   const shownIdx = () => {
-    const M = shownM(), i = M && M.st !== "rule" ? data.confirmed.findIndex(c => c.date === iso(M.dt)) : -1;
+    const M = shownM(), i = M && M.st !== "rule" ? data.confirmed.findIndex(c => c.date === (M.key || iso(M.dt))) : -1;
     return i >= 0 ? i : undefined;
   };
   const tabs = on => '<div class="adm-tabs" role="tablist">'
@@ -241,7 +250,7 @@
   /* ── 정기모임 일정 ── */
   function ruleNext(list) {           // 회원 화면과 같은 계산: 이미 정한 분기는 건너뛴 다음 회칙 날짜
     const done = new Set();
-    list.forEach(c => { done.add(qkey(ymd(c.date))); if (c.replaces) done.add(c.replaces); });
+    list.forEach(c => { done.add(qkey(firstOf(c))); if (c.replaces) done.add(c.replaces); });
     const t = today();
     for (let k = 0; k < 36; k++) {
       const y = t.getFullYear() + Math.floor((t.getMonth() + k) / 12), m = (t.getMonth() + k) % 12;
@@ -255,7 +264,7 @@
 
   function openSchedule(editIdx) {
     const list = data.confirmed;
-    const ups = list.map((c, i) => ({ c, i })).filter(x => ymd(x.c.date) >= today())
+    const ups = list.map((c, i) => ({ c, i })).filter(x => lastOf(x.c) >= today())
       .sort((a, b) => (a.c.date < b.c.date ? -1 : 1));
     const ed = editIdx != null ? list[editIdx] : null;
     const rule = ruleNext(list);
@@ -266,53 +275,81 @@
       + '<label class="k">회원 화면 표시</label><div class="adm-seg">'
       + '<label><input type="radio" name="adm-st" value="확정"> 확정</label>'
       + '<label><input type="radio" name="adm-st" value="조율"> 조율 중</label></div>'
-      + '<div class="adm-two"><div><label class="k" for="adm-date">날짜</label><input id="adm-date" type="date"></div>'
+      + '<label class="adm-chk"><input type="checkbox" id="adm-monly"> 날짜 미정 — 모이는 달만 정함</label>'
+      + '<div class="adm-two"><div><label class="k" id="adm-dlabel" for="adm-date">날짜</label><input id="adm-date" type="date">'
+      + '<input id="adm-month" type="month" placeholder="2026-10" hidden></div>'
       + '<div><label class="k" for="adm-time">시간</label><input id="adm-time" type="time"></div></div>'
+      + '<p class="muted" id="adm-mhint" style="margin-top:6px" hidden>회원 화면에 ‘10월 중 · 날짜 미정 · 조율 중’으로 보입니다. 시간·장소는 정해졌으면 넣고, 아니면 비워 두세요.</p>'
       + '<label class="k" for="adm-place">장소</label><input id="adm-place" type="text" maxlength="40" placeholder="예) 동인천 향원">'
       + '<label class="k" for="adm-note">안내 문구 (선택)</label><input id="adm-note" type="text" maxlength="80" placeholder="비워 두면 확정·조율 중에 맞는 기본 문구">'
       + '<div class="adm-btns"><button class="p" id="adm-save" type="button">' + (ed ? "수정 저장" : "저장") + '</button>'
       + (ed ? '<button class="s" id="adm-new" type="button">새 일정으로</button>' : '') + '</div>'
       + '<label class="k">정해 둔 일정</label>'
       + (ups.length ? '<ul class="adm-list">' + ups.map(x =>
-          '<li><span class="dt">' + show(ymd(x.c.date)) + ' ' + E(x.c.time) + '</span>' + tag(stOf(x.c))
+          '<li><span class="dt">' + label(x.c) + ' ' + E(x.c.time) + '</span>' + tag(stOf(x.c))
           + '<span class="pl">' + E(x.c.place || "장소 미정") + '</span><span class="ac">'
           + '<button type="button" data-e="' + x.i + '">수정</button><button type="button" class="del" data-x="' + x.i + '">삭제</button></span></li>').join("") + '</ul>'
         : '<p class="muted" style="margin-top:6px">아직 없습니다. 회원 화면에는 회칙 날짜가 ‘예정’으로 보입니다.</p>')
       + foot);
     sheet(ed ? "정기모임 일정 수정" : "정기모임 일정 정하기", body);
-    wire(body, () => (ed ? ed.date : shownDate()), () => editIdx);
+    wire(body, () => (ed && !isMonth(ed.date) ? ed.date : shownDate()), () => editIdx);
     const f = id => body.querySelector("#" + id);
-    body.querySelector('input[name="adm-st"][value="' + (ed ? stOf(ed) : "확정") + '"]').checked = true;
-    f("adm-date").value = ed ? ed.date : (rule ? iso(rule) : "");
+    const stR = v => body.querySelector('input[name="adm-st"][value="' + v + '"]');
+    stR(ed ? stOf(ed) : "확정").checked = true;
+    const edM = !!(ed && isMonth(ed.date));
+    f("adm-monly").checked = edM;
+    f("adm-date").value = ed && !edM ? ed.date : (rule ? iso(rule) : "");
+    f("adm-month").value = edM ? ed.date : f("adm-date").value.slice(0, 7);
     f("adm-time").value = ed ? (ed.time || "") : (R.time || "");
     f("adm-place").value = ed ? (ed.place || "") : "";
     f("adm-note").value = ed ? (ed.note || "") : "";
     if (ed) f("adm-new").onclick = () => openSchedule();
 
+    // 달만 정하면 날짜 대신 달을 고르고, 상태는 조율 중으로 묶는다(날짜 없이 확정할 수는 없다)
+    function syncMonth() {
+      const on = f("adm-monly").checked;
+      f("adm-date").hidden = on; f("adm-month").hidden = !on; f("adm-mhint").hidden = !on;
+      f("adm-dlabel").textContent = on ? "모이는 달" : "날짜";
+      f("adm-dlabel").htmlFor = on ? "adm-month" : "adm-date";
+      stR("확정").disabled = on;
+      if (on) stR("조율").checked = true;
+    }
+    f("adm-monly").onchange = () => {
+      if (f("adm-monly").checked && f("adm-date").value) f("adm-month").value = f("adm-date").value.slice(0, 7);
+      syncMonth();
+    };
+    syncMonth();
+
     f("adm-save").onclick = async () => {
-      const date = f("adm-date").value, time = f("adm-time").value;
+      const monly = f("adm-monly").checked;
+      const date = monly ? f("adm-month").value.trim() : f("adm-date").value, time = f("adm-time").value;
       const place = f("adm-place").value.trim(), note = f("adm-note").value.trim();
-      const status = body.querySelector('input[name="adm-st"]:checked').value;
-      if (!date) return toast("날짜를 골라 주세요.", "err");
-      if (ymd(date) < today()) return toast("지난 날짜는 정할 수 없습니다.", "err");
+      const status = monly ? "조율" : body.querySelector('input[name="adm-st"]:checked').value;
+      if (monly) {
+        if (!isMonth(date)) return toast("모이는 달을 골라 주세요 (예: 2026-10).", "err");
+        if (date < iso(today()).slice(0, 7)) return toast("지난 달은 정할 수 없습니다.", "err");
+      } else {
+        if (!date) return toast("날짜를 골라 주세요.", "err");
+        if (ymd(date) < today()) return toast("지난 날짜는 정할 수 없습니다.", "err");
+      }
       const next = list.slice();
       const entry = { date, time, place, note, status, saved: new Date().toISOString() };
       if (ed) { entry.replaces = ed.replaces || ""; next[editIdx] = entry; }
-      else { entry.replaces = rule ? qkey(rule) : qkey(ymd(date)); next.push(entry); }
+      else { entry.replaces = rule ? qkey(rule) : qkey(firstOf(entry)); next.push(entry); }
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 400);   // 1년 넘은 지난 일정은 정리
-      const label = status === "조율" ? "조율 중" : "확정";
+      const stName = monly ? "조율 중 · 날짜 미정" : status === "조율" ? "조율 중" : "확정";
       f("adm-save").disabled = true; toast("저장하는 중…", "info");
       const ok = await put(Object.assign({}, data, {
-        confirmed: next.filter(c => ymd(c.date) >= cutoff).sort((a, b) => (a.date < b.date ? -1 : 1)) }),
-        "정기모임 " + label + ": " + date + " " + time + (place ? " · " + place : ""));
-      if (ok) { close(); toast("‘" + label + "’으로 저장했습니다. 회원 화면에는 1~2분 뒤 반영됩니다.", "ok"); }
+        confirmed: next.filter(c => lastOf(c) >= cutoff).sort((a, b) => (a.date < b.date ? -1 : 1)) }),
+        "정기모임 " + stName + ": " + date + (time ? " " + time : "") + (place ? " · " + place : ""));
+      if (ok) { close(); toast("‘" + stName + "’으로 저장했습니다. 회원 화면에는 1~2분 뒤 반영됩니다.", "ok"); }
       else f("adm-save").disabled = false;
     };
     body.querySelector(".adm-list") && (body.querySelector(".adm-list").onclick = async e => {
       const b = e.target.closest("button"); if (!b) return;
       if (b.dataset.e) return openSchedule(+b.dataset.e);
       const c = list[+b.dataset.x];
-      if (!confirm(show(ymd(c.date)) + " 일정을 지울까요?\n날짜·장소가 지워지고 회원 화면은 회칙 날짜(예정)로 돌아갑니다.\n내용을 남기고 표시만 바꾸려면 ‘수정’에서 확정/조율 중을 고르세요.")) return;
+      if (!confirm(label(c) + " 일정을 지울까요?\n날짜·장소가 지워지고 회원 화면은 회칙 날짜(예정)로 돌아갑니다.\n내용을 남기고 표시만 바꾸려면 ‘수정’에서 확정/조율 중을 고르세요.")) return;
       toast("지우는 중…", "info");
       if (await put(Object.assign({}, data, { confirmed: list.filter((_, i) => i !== +b.dataset.x) }), "정기모임 일정 삭제: " + c.date)) {
         close(); toast("지웠습니다. 회원 화면이 회칙 날짜로 돌아갑니다.", "ok");
@@ -323,7 +360,7 @@
   /* ── 참석 체크 ── 회원은 순번대로 이름만(직함 없이), 가출 회원은 뺀다. 게스트는 따로, 참석률은 회원만. */
   function candidates() {
     const t = iso(today()), seen = new Set(), out = [];
-    data.confirmed.forEach(c => { if (c.date <= t) out.push({ d: c.date, p: c.place || "" }); });
+    data.confirmed.forEach(c => { if (!isMonth(c.date) && c.date <= t) out.push({ d: c.date, p: c.place || "" }); });
     D.meetings.forEach(m => out.push({ d: m.key || m.start, p: m.place || "" }));
     return out.sort((a, b) => (a.d < b.d ? 1 : -1)).filter(x => !seen.has(x.d) && seen.add(x.d)).slice(0, 4);
   }
