@@ -31,6 +31,11 @@
   const firstOf = c => ymd(isMonth(c.date) ? c.date + "-01" : c.date);
   const lastOf = c => { const d = firstOf(c); return isMonth(c.date) ? new Date(d.getFullYear(), d.getMonth() + 1, 0) : d; };
   const label = c => isMonth(c.date) ? c.date.slice(0, 4) + "." + c.date.slice(5) + "월 중 (날짜 미정)" : show(ymd(c.date));
+  // 장소 이름(place)과 지도 링크(map). 예전처럼 장소 칸에 링크만 들어 있으면 지도 링크로 본다.
+  const urlIn = s => (String(s || "").match(/https?:\/\/[^\s<>"']+/i) || [""])[0];
+  const linkOnly = s => /^\s*https?:\/\//i.test(s || "");
+  const placeText = c => (linkOnly(c.place) ? "" : c.place || "");
+  const mapOf = c => urlIn(c.map) || (linkOnly(c.place) ? urlIn(c.place) : "");
   const b64e = s => { let b = ""; new TextEncoder().encode(s).forEach(x => { b += String.fromCharCode(x); }); return btoa(b); };
   const b64d = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g, "")), c => c.charCodeAt(0)));
   const headers = t => ({ Authorization: "Bearer " + t, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" });
@@ -60,7 +65,7 @@
 .adm-sheet .hd .x{margin-left:auto; font-size:18px; background:transparent; border:0; color:var(--muted); cursor:pointer; padding:4px 8px}
 .adm-sheet .muted{color:var(--muted); font-size:13px; margin:0}
 .adm-sheet label.k{display:block; margin-top:12px; font-size:13px; font-weight:600; color:var(--muted)}
-.adm-sheet input[type=text], .adm-sheet input[type=date], .adm-sheet input[type=month], .adm-sheet input[type=time], .adm-sheet input[type=password]{
+.adm-sheet input[type=text], .adm-sheet input[type=url], .adm-sheet input[type=date], .adm-sheet input[type=month], .adm-sheet input[type=time], .adm-sheet input[type=password]{
   display:block; width:100%; min-width:0; margin-top:4px; padding:10px 10px; font:inherit; font-size:16px; color:var(--ink);
   background:var(--surface-2); border:1px solid var(--line); border-radius:3px; box-sizing:border-box}
 .adm-sheet input[type=date], .adm-sheet input[type=month], .adm-sheet input[type=time]{font-family:"IBM Plex Mono",monospace; font-size:15px; padding:10px 6px}
@@ -140,7 +145,7 @@
     s.appendChild(el("div", "hd", '<h3>' + E(title) + '</h3><button class="x" type="button" aria-label="닫기">✕</button>'));
     s.appendChild(body);
     // 글자 칸마다 한 번에 지우는 ✕ — 글자가 있을 때만 보인다(placeholder 가 보이면 CSS 로 숨김)
-    s.querySelectorAll('input[type=text], input[type=password]').forEach(inp => {
+    s.querySelectorAll('input[type=text], input[type=url], input[type=password]').forEach(inp => {
       const w = el("span", "adm-clr"), x = el("button", "adm-x", "✕");
       x.type = "button"; x.setAttribute("aria-label", "지우기"); x.tabIndex = -1;
       inp.parentNode.insertBefore(w, inp); w.append(inp, x);
@@ -295,13 +300,15 @@
       + '<div><label class="k" for="adm-time">시간</label><input id="adm-time" type="time"></div></div>'
       + '<p class="muted" id="adm-mhint" style="margin-top:6px" hidden>회원 화면에 ‘10월 중 · 날짜 미정 · 조율 중’으로 보입니다. 시간·장소는 정해졌으면 넣고, 아니면 비워 두세요.</p>'
       + '<label class="k" for="adm-place">장소</label><input id="adm-place" type="text" maxlength="40" placeholder="예) 동인천 향원">'
+      + '<label class="k" for="adm-map">지도 링크 (선택)</label><input id="adm-map" type="url" maxlength="500" autocomplete="off" '
+      + 'placeholder="네이버 지도 → 공유 → 복사해 붙여 넣기">'
       + '<label class="k" for="adm-note">안내 문구 (선택)</label><input id="adm-note" type="text" maxlength="80" placeholder="비워 두면 확정·조율 중에 맞는 기본 문구">'
       + '<div class="adm-btns"><button class="p" id="adm-save" type="button">' + (ed ? "수정 저장" : "저장") + '</button>'
       + (ed ? '<button class="s" id="adm-new" type="button">새 일정으로</button>' : '') + '</div>'
       + '<label class="k">정해 둔 일정</label>'
       + (ups.length ? '<ul class="adm-list">' + ups.map(x =>
           '<li><span class="dt">' + label(x.c) + ' ' + E(x.c.time) + '</span>' + tag(stOf(x.c))
-          + '<span class="pl">' + E(x.c.place || "장소 미정") + '</span><span class="ac">'
+          + '<span class="pl">' + E(placeText(x.c) || (mapOf(x.c) ? "지도 링크만" : "장소 미정")) + '</span><span class="ac">'
           + '<button type="button" data-e="' + x.i + '">수정</button><button type="button" class="del" data-x="' + x.i + '">삭제</button></span></li>').join("") + '</ul>'
         : '<p class="muted" style="margin-top:6px">아직 없습니다. 회원 화면에는 회칙 날짜가 ‘예정’으로 보입니다.</p>')
       + foot);
@@ -315,7 +322,21 @@
     f("adm-date").value = ed && !edM ? ed.date : (rule ? iso(rule) : "");
     f("adm-month").value = edM ? ed.date : f("adm-date").value.slice(0, 7);
     f("adm-time").value = ed ? (ed.time || "") : (R.time || "");
-    f("adm-place").value = ed ? (ed.place || "") : "";
+    f("adm-place").value = ed ? placeText(ed) : "";
+    f("adm-map").value = ed ? mapOf(ed) : "";
+    // 네이버 지도 '공유'로 복사한 글([네이버지도] / 이름 / 주소 / 링크)을 붙여 넣으면 링크만 남기고, 장소가 비어 있으면 이름도 채운다
+    const onPaste = e => {
+      const t = (e.clipboardData && e.clipboardData.getData("text")) || "", u = urlIn(t);
+      if (!u || (e.target === f("adm-place") && !/^\s*\[?네이버\s*지도|^\s*https?:/i.test(t))) return;
+      e.preventDefault();
+      f("adm-map").value = u;
+      const lines = t.split(/\r?\n/).map(v => v.trim()).filter(Boolean);
+      if (/네이버\s*지도/.test(lines[0] || "") && lines[1] && !urlIn(lines[1]) && (e.target === f("adm-place") || !f("adm-place").value.trim()))
+        f("adm-place").value = lines[1].replace(/^\[|\]$/g, "").slice(0, 40);
+      toast("지도 링크를 넣었습니다.", "ok");
+    };
+    f("adm-map").addEventListener("paste", onPaste);
+    f("adm-place").addEventListener("paste", onPaste);
     f("adm-note").value = ed ? (ed.note || "") : "";
     if (ed) f("adm-new").onclick = () => openSchedule();
 
@@ -337,7 +358,10 @@
     f("adm-save").onclick = async () => {
       const monly = f("adm-monly").checked;
       const date = monly ? f("adm-month").value.trim() : f("adm-date").value, time = f("adm-time").value;
-      const place = f("adm-place").value.trim(), note = f("adm-note").value.trim();
+      let place = f("adm-place").value.trim(), map = urlIn(f("adm-map").value);
+      const note = f("adm-note").value.trim();
+      if (!map && urlIn(place)) { map = urlIn(place); place = ""; }          // 장소 칸에 링크를 넣었으면 지도 링크로 옮긴다
+      if (f("adm-map").value.trim() && !map) return toast("지도 링크는 https:// 로 시작하는 주소여야 합니다.", "err");
       const status = monly ? "조율" : body.querySelector('input[name="adm-st"]:checked').value;
       if (monly) {
         if (!isMonth(date)) return toast("모이는 달을 골라 주세요 (예: 2026-10).", "err");
@@ -347,7 +371,7 @@
         if (ymd(date) < today()) return toast("지난 날짜는 정할 수 없습니다.", "err");
       }
       const next = list.slice();
-      const entry = { date, time, place, note, status, saved: new Date().toISOString() };
+      const entry = { date, time, place, map, note, status, saved: new Date().toISOString() };
       if (ed) { entry.replaces = ed.replaces || ""; next[editIdx] = entry; }
       else { entry.replaces = rule ? qkey(rule) : qkey(firstOf(entry)); next.push(entry); }
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 400);   // 1년 넘은 지난 일정은 정리
@@ -355,7 +379,7 @@
       f("adm-save").disabled = true; toast("저장하는 중…", "info");
       const ok = await put(Object.assign({}, data, {
         confirmed: next.filter(c => lastOf(c) >= cutoff).sort((a, b) => (a.date < b.date ? -1 : 1)) }),
-        "정기모임 " + stName + ": " + date + (time ? " " + time : "") + (place ? " · " + place : ""));
+        "정기모임 " + stName + ": " + date + (time ? " " + time : "") + (place ? " · " + place : "") + (map ? " · 지도 링크" : ""));
       if (ok) { close(); toast("‘" + stName + "’으로 저장했습니다. 회원 화면에는 1~2분 뒤 반영됩니다.", "ok"); }
       else f("adm-save").disabled = false;
     };
@@ -374,7 +398,7 @@
   /* ── 참석 체크 ── 회원은 순번대로 이름만(직함 없이), 가출 회원은 뺀다. 게스트는 따로, 참석률은 회원만. */
   function candidates() {
     const t = iso(today()), seen = new Set(), out = [];
-    data.confirmed.forEach(c => { if (!isMonth(c.date) && c.date <= t) out.push({ d: c.date, p: c.place || "" }); });
+    data.confirmed.forEach(c => { if (!isMonth(c.date) && c.date <= t) out.push({ d: c.date, p: placeText(c) }); });
     D.meetings.forEach(m => out.push({ d: m.key || m.start, p: m.place || "" }));
     return out.sort((a, b) => (a.d < b.d ? 1 : -1)).filter(x => !seen.has(x.d) && seen.add(x.d)).slice(0, 4);
   }
