@@ -205,7 +205,7 @@ h2{font-family:Hahmlet,serif; font-weight:600; font-size:23px; margin:0;
 .term.result .sub{color:var(--sea); opacity:.75}
 .term.plus .vl, .term.plus .lb{color:var(--sea)}
 /* IV 요약의 총 지분액 금액은 표의 지분액 칸과 같은 초록 (V 검산 줄은 그대로 파랑) */
-#eqsum .term.plus .vl{color:var(--ok)}
+#eqsum .term.plus .vl, #eqsum .term.plus .lb{color:var(--ok)}
 .term.minus .vl, .term.minus .lb{color:var(--rust)}
 .op{display:flex; align-items:center; font-family:Hahmlet,serif; font-size:18px;
   color:var(--faint); font-weight:400; padding:14px 2px 0}
@@ -396,16 +396,15 @@ h2{font-family:Hahmlet,serif; font-weight:600; font-size:23px; margin:0;
   padding:14px 16px; border-top:1px solid var(--line-2); align-items:center}
 .mrow:first-child{border-top:0}
 .mrow.gone{background:var(--surface-2)}
-.mid{display:flex; align-items:center; gap:4px; flex-wrap:wrap}
+.mid{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
 .mid .nm{font-size:16.5px; font-weight:600; letter-spacing:-.01em}
-.tag{font-size:11.5px; font-weight:600; padding:2px 5px; border-radius:2px;
-  letter-spacing:.02em; font-family:"IBM Plex Mono",monospace; white-space:nowrap}
+.tag{font-size:11.5px; font-weight:600; padding:2px 6px; border-radius:2px;
+  letter-spacing:.04em; font-family:"IBM Plex Mono",monospace; white-space:nowrap}
 .tag.회장,
 .tag.총무{background:var(--sea-soft); color:var(--sea)}
 .tag.회원{background:var(--ok-soft); color:var(--ok)}
 .tag.가출{background:var(--rust-soft); color:var(--rust)}
 .tag.정상{background:var(--ok-soft); color:var(--ok)}
-.tag.king{background:var(--ok); color:var(--surface)}      /* 가장 많이 낸 회원 */
 .tag.중단{background:var(--rust-soft); color:var(--rust)}
 .mid .seq{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--faint);
   font-weight:600; min-width:13px}
@@ -435,6 +434,7 @@ tbody tr.gone .fz{background:var(--surface-2)}
 .z5{left:204px; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
     font-weight:600; font-size:11.5px; border-right:2px solid var(--line); color:var(--rust)}
 .z5.zero{color:var(--faint)}
+.z5.king{font-family:"IBM Plex Sans KR","Malgun Gothic",sans-serif; font-weight:600; color:var(--ok)}
 .z3 b{display:inline-block; padding:1px 4px; border-radius:2px; font-weight:600;
   font-size:11.5px; font-family:"IBM Plex Mono",monospace}
 .z3 b.회장,
@@ -1445,7 +1445,6 @@ $("members").innerHTML = D.members.map(m => {
     + '<div class="mid"><span class="seq">' + m.no + '</span>'
     + '<span class="nm">' + esc(m.name) + '</span>'
     + '<span class="tag ' + m.role + '">' + esc(m.role) + '</span>'
-    + (m.king ? '<span class="tag king">왕초</span>' : "")
     + '<span class="tag ' + m.status + '">' + esc(m.status) + '</span></div>'
     + '<div class="mamt">' + hd
     + '<div class="sum">적선 ' + won(m.total) + '원</div></div>'
@@ -1498,8 +1497,8 @@ mt.innerHTML =
         + '<td class="fz z2">' + esc(m.name) + '</td>'
         + '<td class="fz z3"><b class="' + m.role + '">' + esc(m.role) + '</b></td>'
         + '<td class="fz z4">' + won(m.total) + '</td>'
-        + '<td class="fz z5' + (m.beg ? "" : " zero") + '">'
-        + (m.beg === null ? "—" : m.beg > 0 ? won(m.beg) : "·") + '</td>'
+        + '<td class="fz z5' + (m.king ? " king" : m.beg ? "" : " zero") + '">'
+        + (m.beg === null ? "—" : m.king ? "왕초" : m.beg > 0 ? won(m.beg) : "·") + '</td>'
         + REV.map((ym,i) => {
             const v = m.by_month[ym] || 0;
             const cr = (m.credits || []).some(c => c.date.slice(0,7) === ym);
