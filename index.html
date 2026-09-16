@@ -1526,8 +1526,8 @@ $("eqlede").innerHTML =
   + EQ.n + "명이 똑같이 나눠 부담하는 <b>모임지출</b>(1인 " + won(EQ.per_share)
   + "원)을 빼고 남은 돈입니다.";
 $("eqsum").innerHTML =
-    term("입금액", EQ.put, "plus", EQ.n + "명 · 회비 + 공동수입 − 복지혜택")
-  + '<div class="op">−</div>' + term("모임지출액", EQ.cost, "minus",
+    term("총 지분액", EQ.put, "plus", EQ.n + "명 · 회비 + 공동수입 − 복지혜택")
+  + '<div class="op">−</div>' + term("총 모임지출액", EQ.cost, "minus",
       EQ.n + "명 균등 · 1인 " + won(EQ.per_share) + "원")
   + '<div class="op">=</div>' + term("통장 잔액", EQ.balance, "result", dot(D.period_to) + " 기준");
 $("eqtable").innerHTML =
@@ -1591,7 +1591,7 @@ $("eqnote").innerHTML =
   + '<div class="ec-row ec-tot"><span class="ec-k">합계</span>'
   + '<span class="ec-v">' + won(EQ.shared) + '</span>'
   + '<span class="ec-op"></span><span class="ec-res"></span></div></div>'
-  + "· <b>모임지출액 " + won(EQ.cost) + "원</b>은 입금액 " + won(EQ.put)
+  + "· <b>총 모임지출액 " + won(EQ.cost) + "원</b>은 총 지분액 " + won(EQ.put)
   + "원에서 통장 잔액 " + won(EQ.balance) + "원을 뺀 금액이고, 이를 " + EQ.n
   + "명이 똑같이 나눠 <b>1인 " + won(EQ.per_share) + "원</b>씩 부담합니다."
   + "<br>· 복지혜택(생일케익)은 <b>받은 사람 지분액에서만</b> 뺍니다. 나머지 회원은 따로 더하지 않아도 "
