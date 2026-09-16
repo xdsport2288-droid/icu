@@ -18,6 +18,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600&display=swap">
 
+<script>
+/* 저장해 둔 화면 모드(밝게/어둡게)를 그리기 전에 입힌다 — 안 그러면 한 번 번쩍인다.
+   고른 적이 없으면 휴대폰·PC 설정을 그대로 따른다. */
+try { var t = localStorage.getItem("icu_theme");
+      if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 <style>
 /* ─── 글자 체계 — 같은 역할은 어디서나 같은 크기·굵기·색 ───
    섹션 타이틀 23 · 600 · ink            설명 문단 14.5 · 400 · ink-2 (강조 600 ink)
@@ -75,6 +81,7 @@
 *{box-sizing:border-box}
 body{
   margin:0; background:var(--paper); color:var(--ink);
+  overscroll-behavior-y:contain;          /* 브라우저 기본 당겨서 새로고침을 끄고 아래 것만 쓴다 */
   font-family:"IBM Plex Sans KR","Malgun Gothic",system-ui,sans-serif;
   font-size:14.5px; font-weight:400; line-height:1.62;
   -webkit-text-size-adjust:100%;
@@ -90,7 +97,32 @@ body{
    스크롤바가 있는 좁은 PC 창에서 제목이 5px 넘쳤다 */
 .masthead{padding:38px 0 0; container-type:inline-size}
 /* ICU 배지 오른쪽에 최근 업데이트(은행 거래내역을 받은 시각) — 회원이 "오늘 확인한 숫자"인지 바로 알게 */
-.mast-top{display:flex; align-items:center; justify-content:space-between; gap:12px}
+.mast-top{display:flex; align-items:center; justify-content:space-between; gap:10px}
+/* 밝게 / 어둡게 — 지금 화면과 반대되는 그림을 보여 준다(누르면 그렇게 바뀐다는 뜻) */
+.themebtn{flex:0 0 auto; width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+  padding:0; background:transparent; border:1px solid var(--line); border-radius:3px;
+  color:var(--muted); cursor:pointer}
+.themebtn svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8;
+  stroke-linecap:round; stroke-linejoin:round}
+.themebtn .ico-sun{display:none}
+.themebtn[data-now="dark"] .ico-sun{display:block}
+.themebtn[data-now="dark"] .ico-moon{display:none}
+.themebtn:hover, .themebtn:focus-visible{color:var(--sea); border-color:var(--sea)}
+/* 당겨서 새로고침 — 휴대폰에서 맨 위에서 아래로 당길 때만 내려온다 */
+.ptr{position:fixed; top:calc(6px + env(safe-area-inset-top, 0px)); left:50%; z-index:50;
+  display:flex; align-items:center; gap:7px; padding:7px 14px; border-radius:999px;
+  background:var(--surface); border:1px solid var(--line); color:var(--muted); font-size:13px; font-weight:600;
+  box-shadow:0 2px 10px rgba(0,0,0,.28); transform:translate(-50%,-160%); opacity:0; pointer-events:none;
+  transition:transform .18s ease, opacity .18s ease}
+.ptr.on{color:var(--sea); border-color:var(--sea)}
+.ptr svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;
+  stroke-linecap:round; stroke-linejoin:round}
+.ptr.on svg{transform:rotate(180deg)}
+.ptr.busy svg{animation:ptrspin .9s linear infinite}
+@keyframes ptrspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){
+  .ptr{transition:none} .ptr.busy svg{animation:none}
+}
 .updated{margin:0; display:flex; flex-direction:column; align-items:flex-end; text-align:right; line-height:1.35}
 .updated .up-k{font-size:13px; font-weight:600; color:var(--muted)}
 .updated b{font-family:"IBM Plex Mono",monospace; font-size:14.5px; font-weight:600;
@@ -913,6 +945,10 @@ footer .sig b{display:block; font-size:18px; font-weight:700; color:var(--ink)}
   <div class="mast-top">
     <span class="owner">ICU</span>
     <p class="updated" id="updated" hidden></p>
+    <button type="button" class="themebtn" id="themebtn">
+      <svg class="ico-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+      <svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M4.2 12H2M22 12h-2.2M6.3 6.3 4.8 4.8M19.2 19.2l-1.5-1.5M17.7 6.3l1.5-1.5M4.8 19.2l1.5-1.5"/></svg>
+    </button>
   </div>
   <h1 class="stencil">INCHEON CONTAINER UNIVERSE</h1>
   <p class="since" id="since"></p>
@@ -1030,6 +1066,8 @@ footer .sig b{display:block; font-size:18px; font-weight:700; color:var(--ink)}
 
 <footer id="foot"></footer>
 </div>
+<div class="ptr" id="ptr" role="status" aria-live="polite">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg><span class="ptr-t">당겨서 새로고침</span></div>
 <div class="tip" id="tip" role="status" aria-live="polite"></div>
 <nav class="fab" aria-label="화면 이동">
   <button type="button" id="goTop" aria-label="맨 위로" title="맨 위로">
@@ -1937,6 +1975,61 @@ draw();
     + "금액이 이상하다고 생각되면 언제든지 편하게 총무에게 말씀해 주세요.<br>"
     + "항상 <span class='slogan-in'>" + esc(D.slogan) + "</span>할 수 있는 회계관리가 될 수 있도록 하겠습니다. 감사합니다.</p>"
     + "<div class='sig'><span>" + esc(D.code) + " 총무</span><b>" + esc(D.treasurer) + " 드림</b></div>";
+}
+
+/* ── 밝게 / 어둡게 ──
+   고르기 전에는 휴대폰·PC 설정을 따르고, 한 번 고르면 이 기기에 기억한다. */
+{
+  const root = document.documentElement, btn = $("themebtn");
+  const sys = matchMedia("(prefers-color-scheme:dark)");
+  const now = () => root.dataset.theme || (sys.matches ? "dark" : "light");
+  const paint = () => {
+    const dark = now() === "dark";
+    btn.dataset.now = dark ? "dark" : "light";
+    const label = dark ? "밝은 화면으로 바꾸기" : "어두운 화면으로 바꾸기";
+    btn.title = label; btn.setAttribute("aria-label", label);
+  };
+  btn.addEventListener("click", () => {
+    const next = now() === "dark" ? "light" : "dark";
+    root.dataset.theme = next;
+    try { localStorage.setItem("icu_theme", next); } catch (e) {}
+    paint();
+  });
+  sys.addEventListener("change", paint);
+  paint();
+}
+
+/* ── 당겨서 새로고침(휴대폰) ──
+   홈 화면 아이콘으로 열면 주소창이 없어 새로고침할 자리가 없다.
+   맨 위에서 아래로 당기면 은행 거래내역·정기모임을 새로 받아 온다. */
+{
+  const el = $("ptr"), txt = el.querySelector(".ptr-t"), TRIG = 62, MAX = 92;
+  let startY = 0, pull = 0, on = false, busy = false;
+  const move = y => { el.style.transform = "translate(-50%," + (y - 34) + "px)"; el.style.opacity = y > 6 ? 1 : 0; };
+  const rest = () => { el.style.transition = ""; el.style.transform = ""; el.style.opacity = "";
+                       el.classList.remove("on"); txt.textContent = "당겨서 새로고침"; };
+  addEventListener("touchstart", e => {
+    if (busy || e.touches.length !== 1 || scrollY > 0) { on = false; return; }
+    on = true; startY = e.touches[0].clientY; pull = 0; el.style.transition = "none";
+  }, { passive: true });
+  addEventListener("touchmove", e => {
+    if (!on) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0 || scrollY > 0) { on = false; rest(); return; }
+    pull = Math.min(MAX, dy * 0.5);
+    if (pull > 4) e.preventDefault();          // 당기는 동안에는 화면이 같이 움직이지 않게
+    move(pull);
+    el.classList.toggle("on", pull >= TRIG);
+    txt.textContent = pull >= TRIG ? "놓으면 새로고침" : "당겨서 새로고침";
+  }, { passive: false });
+  addEventListener("touchend", () => {
+    if (!on) return;
+    on = false; el.style.transition = "";
+    if (pull < TRIG) { rest(); pull = 0; return; }
+    busy = true; el.classList.add("busy"); txt.textContent = "새로고침 중…"; move(58);
+    location.reload();
+  });
+  addEventListener("touchcancel", () => { if (on) { on = false; rest(); } });
 }
 
 /* ── 관리자 모드 ──
