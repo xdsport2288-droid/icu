@@ -837,6 +837,8 @@ table.eqt tfoot td.now{background:var(--sea); color:var(--surface)}
 .ec-why{grid-column:1/-1; font-size:13px; color:var(--warn); font-weight:500;
   margin-top:1px}
 .ec-tot{border-top:1px solid var(--line); margin-top:5px; padding-top:7px}
+/* 끝전 줄 — 나누다 남은 돈이라 본문과 구분되게 파란 글씨로 */
+.ec-row.odd .ec-k, .ec-row.odd .ec-v, .ec-row.odd .ec-why, .ec-row.odd .ec-why .dw{color:var(--sea)}
 .ec-tot .ec-k{font-weight:600; color:var(--ink)}
 .ec-res.xsm{font-family:"IBM Plex Sans KR",sans-serif; font-size:13px; font-weight:400;
   color:var(--muted); text-align:left}
@@ -1578,30 +1580,27 @@ const nameOf = id => (D.members.find(m => m.id === id) || {}).name || id;
 $("eqnote").innerHTML =
   "<b>계산식</b> <code>" + esc(EQ.formula) + "</code>"
   + '<div class="eqcalc"><div class="ec-ttl">공동수입 배분</div>'
-  + EQ.shared_parts.map(p => {
-      // 1원 단위로 나누고 남는 돈을 항목마다 밝힌다 — 합계와 나눈 금액이 왜 다른지 여기서 드러난다
-      const left = p.v - p.each * p.n;
-      const why = [
-        p.excluded.length ? esc(p.excluded.join(" · ")) + " 제외"
-          + (p.why ? ' <span class="dw">— ' + esc(p.why) + '</span>' : "") : "",
-        left ? '<span class="dw">' + p.n + '명에게 ' + won(p.each * p.n) + '원 · 끝전 '
-               + won(left) + '원</span>' : ""
-      ].filter(Boolean).join(" · ");
-      return '<div class="ec-row">'
+  + EQ.shared_parts.map(p =>
+      '<div class="ec-row">'
       + '<span class="ec-k">' + esc(p.k) + '</span>'
       + '<span class="ec-v">' + won(p.v) + '</span>'
       + '<span class="ec-op">÷ ' + p.n + '명 =</span>'
       + '<span class="ec-res">' + won(p.each) + '원</span>'
-      + (why ? '<span class="ec-why">' + why + '</span>' : "")
-      + '</div>'; }).join("")
+      + (p.excluded.length
+          ? '<span class="ec-why">' + esc(p.excluded.join(" · ")) + ' 제외'
+            + (p.why ? ' <span class="dw">— ' + esc(p.why) + '</span>' : "") + '</span>' : "")
+      + '</div>').join("")
   + '<div class="ec-row"><span class="ec-k">들어온 공동수입</span>'
   + '<span class="ec-v">' + won(EQ.shared) + '</span>'
   + '<span class="ec-op"></span><span class="ec-res"></span></div>'
-  + (EQ.odd ? '<div class="ec-row"><span class="ec-k">나누고 남은 끝전</span>'
+  + (EQ.odd ? '<div class="ec-row odd"><span class="ec-k">나누고 남은 끝전</span>'
       + '<span class="ec-v">−' + won(EQ.odd) + '</span><span class="ec-op"></span>'
       + '<span class="ec-res"></span>'
-      + '<span class="ec-why"><span class="dw">누구 몫으로도 붙이지 않았습니다 — ICU 통장 잔액 '
-      + won(EQ.balance) + '원 안에 그대로 들어 있습니다</span></span></div>' : "")
+      + '<span class="ec-why">'
+      + EQ.shared_parts.filter(p => p.v - p.each * p.n)
+          .map(p => esc(p.k) + " " + won(p.v - p.each * p.n) + "원").join(" + ")
+      + ' · <span class="dw">ICU 통장 잔액 ' + won(EQ.balance) + '원 안으로 포함돼 있습니다</span>'
+      + '</span></div>' : "")
   + '<div class="ec-row ec-tot"><span class="ec-k">회원에게 나눈 돈</span>'
   + '<span class="ec-v">' + won(EQ.shared - EQ.odd) + '</span>'
   + '<span class="ec-op"></span><span class="ec-res"></span>'
@@ -1619,7 +1618,7 @@ $("eqnote").innerHTML =
   + (EQ.odd ? "<br>· 공동수입 <b>" + won(EQ.shared) + "원</b> 가운데 회원에게 나눈 돈은 <b>"
       + won(EQ.shared - EQ.odd) + "원</b>입니다. 1원 단위로 나누고 남은 <b>끝전 " + won(EQ.odd)
       + "원</b>은 누구 몫으로도 붙이지 않았고, ICU 통장 잔액 <b>" + won(EQ.balance)
-      + "원</b> 안에 그대로 들어 있습니다." : "")
+      + "원</b> 안으로 포함돼 있습니다." : "")
   + (EQ.per_share_odd ? "<br>· 모임지출이 1원 단위로 나눠떨어지지 않아 순번이 앞선 "
       + EQ.per_share_odd + "명이 1원씩 더 부담합니다." : "")
   + (EQ.welfare_pending.length ? "<br>" + EQ.welfare_pending.map(w =>
