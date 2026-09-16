@@ -1629,7 +1629,8 @@ $("eqnote").innerHTML =
   + (EQ.welfare_pending.length ? "<br>" + EQ.welfare_pending.map(w =>
       "· " + esc(w.date) + " " + esc(w.label) + " " + won(w.amount)
       + "원은 " + esc(w.note) + ".").join("<br>") : "")
-  + "<br>· " + esc(EQ.withdrawn_note)
+  // 다른 각주처럼 '누구·얼마'까지를 굵게 (예: "이형래 생일케익 25,900원")
+  + "<br>· " + esc(EQ.withdrawn_note).replace(/^(.*?원)/, "<b>$1</b>")
   + "<br>· 지분%는 소수 첫째 자리로 반올림한 값이라 각 줄을 더하면 100.0%와 0.1%p까지 어긋날 수 있습니다. "
   + "돌려받을 돈의 합계는 통장 잔액 <b>" + won(EQ.balance) + "원</b>과 1원까지 일치합니다.";
 
