@@ -582,8 +582,8 @@ thead th.yb{border-left:1px solid var(--line)}
 /* ─── 특이거래 ─── */
 .spec{background:var(--surface); border:1px solid var(--line)}
 /* 통장 세팅 3건 — 회원 거래와 성격이 달라 따로 묶는다 */
-.spgroup{margin-top:14px; background:var(--surface-2); border:1px solid var(--line);
-  border-left:3px solid var(--rust)}
+.spgroup{margin:0 0 14px; background:var(--surface-2); border:1px solid var(--line);
+  border-left:3px solid var(--rust)}      /* 통장 세팅이 먼저, 그 아래에 설명이 필요한 거래 */
 .spgroup:empty{display:none}
 .spg-head{display:flex; justify-content:space-between; align-items:baseline; gap:6px 12px;
   flex-wrap:wrap; padding:11px 16px 10px; border-bottom:1px solid var(--line-2)}
@@ -1024,8 +1024,8 @@ footer .sig b{display:block; font-size:18px; font-weight:700; color:var(--ink)}
   <div class="shead"><span class="snum">IX</span><h2>설명이 필요한 거래</h2>
     <span class="scount" id="spcount"></span></div>
   <p class="lede" id="splede"></p>
-  <div class="spec" id="special"></div>
   <div class="spgroup" id="specialset"></div>
+  <div class="spec" id="special"></div>
 </section>
 
 <section id="sec-ledger">
