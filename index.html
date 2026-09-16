@@ -780,6 +780,7 @@ table.ro tr.gone td{background:var(--surface-2); color:var(--muted)}
 .eqc .ectot{grid-column:2; font-size:13px; color:var(--muted)}
 .eqc .ectot b, .eqc .ecpct{font-family:"IBM Plex Mono",monospace; font-weight:600;
   font-variant-numeric:tabular-nums; color:var(--ink-2)}
+.eqc .ectot b{color:var(--ok)}          /* 지분액 — 표의 지분액 칸과 같은 초록 */
 .eqc .ecpct{grid-column:3; font-size:13px; text-align:right; white-space:nowrap}
 .eqc .ecsum{grid-column:2/-1; font-family:"IBM Plex Mono",monospace; font-size:13px;
   color:var(--muted); font-variant-numeric:tabular-nums; margin-top:2px}
@@ -812,6 +813,7 @@ table.eqt tfoot td:first-child{padding-left:12px}
 table.eqt td.num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
 table.eqt td.nm{font-weight:600}
 table.eqt td.neg{color:var(--rust)}
+table.eqt td.eqv, table.eqt tfoot td.eqv{color:var(--ok)}   /* 지분액 — 각 줄과 총합계 모두 */
 table.eqt td.now{background:var(--sea-soft); color:var(--sea); font-weight:600}
 table.eqt tfoot td{border-top:1.5px solid var(--ink); font-weight:600; background:var(--surface-2)}
 table.eqt tfoot td.now{background:var(--sea); color:var(--surface)}
@@ -1543,15 +1545,15 @@ $("eqtable").innerHTML =
       + "<td class='num'>" + won(m.eq_shared) + "</td>"
       + "<td class='num" + (m.eq_welfare < 0 ? " neg" : "") + "'>" + won(m.eq_welfare) + "</td>"
       + "<td class='num neg'>−" + won(m.eq_cost) + "</td>"
-      + "<td class='num'>" + won(m.eq_total) + "</td>"
+      + "<td class='num eqv'>" + won(m.eq_total) + "</td>"
       + "<td class='num'>" + (m.eq_pct*100).toFixed(1) + "%</td>"
       + "<td class='num now'>" + won(m.eq_now) + "</td></tr>").join("")
   + "</tbody><tfoot><tr><td class='l' colspan='2'>총합계</td>"
   + "<td class='num'>" + won(ACT.reduce((a,b)=>a+b.eq_dues,0)) + "</td>"
   + "<td class='num'>" + won(ACT.reduce((a,b)=>a+b.eq_shared,0)) + "</td>"
-  + "<td class='num'>" + won(ACT.reduce((a,b)=>a+b.eq_welfare,0)) + "</td>"
+  + "<td class='num neg'>" + won(ACT.reduce((a,b)=>a+b.eq_welfare,0)) + "</td>"
   + "<td class='num neg'>−" + won(EQ.cost) + "</td>"
-  + "<td class='num'>" + won(EQ.put) + "</td>"
+  + "<td class='num eqv'>" + won(EQ.put) + "</td>"
   + "<td class='num'>100.0%</td>"
   + "<td class='num now'>" + won(EQ.balance) + "</td></tr></tfoot>";
 /* 휴대폰용 — 9칸 표는 좁은 화면에서 옆으로 밀어야 돌려받을 돈이 보인다.
