@@ -1616,9 +1616,12 @@ $("eqnote").innerHTML =
 {
   const paid  = D.meetings.reduce((a,b) => a + b.total, 0);
   const spent = D.meetings.reduce((a,b) => a + b.spent, 0);
+  // 실사용과 통장 결제의 차이가 무엇인지 머리글에서 바로 밝힌다(안광두 카드깡 9만원처럼 통장 밖에서 낸 돈)
+  const who = (D.meeting_stats && D.meeting_stats.credit_who) || [];
   $("mtcount").textContent = D.meetings.length + "회 · "
     + (paid === spent ? won(spent) + "원"
-                      : "실사용 " + won(spent) + "원 · 통장 결제 " + won(paid) + "원");
+        : "실사용 " + won(spent) + "원 · 통장 결제 " + won(paid) + "원 + "
+          + (who.length && who.length <= 2 ? who.join(" · ") + " " : "") + "카드깡 " + won(spent - paid) + "원");
 }
 
 /* 회비를 얼마로 할지 정하려면 "한 번 모이면 1인당 얼마 드는가"가 있어야 한다.
