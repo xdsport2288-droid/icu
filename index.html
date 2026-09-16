@@ -839,6 +839,7 @@ table.eqt tfoot td.now{background:var(--sea); color:var(--surface)}
 .ec-tot{border-top:1px solid var(--line); margin-top:5px; padding-top:7px}
 /* 끝전 줄 — 나누다 남은 돈이라 본문과 구분되게 파란 글씨로 */
 .ec-row.odd .ec-k, .ec-row.odd .ec-v, .ec-row.odd .ec-why, .ec-row.odd .ec-why .dw{color:var(--sea)}
+.ec-row.odd .ec-why .wt{color:var(--ink)}      /* 어느 항목에서 남았는지는 본문 색으로 */
 .ec-tot .ec-k{font-weight:600; color:var(--ink)}
 .ec-res.xsm{font-family:"IBM Plex Sans KR",sans-serif; font-size:13px; font-weight:400;
   color:var(--muted); text-align:left}
@@ -1597,8 +1598,8 @@ $("eqnote").innerHTML =
       + '<span class="ec-v">−' + won(EQ.odd) + '</span><span class="ec-op"></span>'
       + '<span class="ec-res"></span>'
       + '<span class="ec-why">'
-      + EQ.shared_parts.filter(p => p.v - p.each * p.n)
-          .map(p => esc(p.k) + " " + won(p.v - p.each * p.n) + "원").join(" + ")
+      + '<span class="wt">' + EQ.shared_parts.filter(p => p.v - p.each * p.n)
+          .map(p => esc(p.k) + " " + won(p.v - p.each * p.n) + "원").join(" + ") + '</span>'
       + ' · <span class="dw">ICU 통장 잔액 ' + won(EQ.balance) + '원 안으로 포함돼 있습니다</span>'
       + '</span></div>' : "")
   + '<div class="ec-row ec-tot"><span class="ec-k">회원에게 나눈 돈</span>'
