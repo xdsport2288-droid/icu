@@ -498,7 +498,6 @@ thead th.yb{border-left:1px solid var(--line)}
 .stripkey{display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--muted);
   padding:11px 16px; border-top:1px solid var(--line); align-items:center}
 .flagline{grid-column:1/-1; display:flex; gap:5px; flex-wrap:wrap; margin-top:7px}
-.flagline i.keep{background:var(--sea-soft); color:var(--sea); border-color:var(--sea)}
 .flagline i{font-style:normal; font-size:11.5px; padding:2px 7px; border-radius:2px;
   background:var(--warn-soft); color:var(--warn); font-weight:500}
 
@@ -1456,10 +1455,20 @@ $("mcount").textContent = D.members.length + "명 · " + MS.length + "개월";
     + esc(D.king) + "</b>(" + won(kingTotal) + "원)이고, "
     + (kingTotal === D.top
         ? "왕초 금액 <b>" + won(D.top) + "원</b>이 기준선입니다. 기준선과의 차이가 <b>구걸금액</b>입니다."
-        : "기준선은 <b>" + won(D.top) + "원</b>입니다 — 넘겨 낸 돈은 <b>킵</b>으로 다음 달 회비에 넣기 때문입니다"
+        : "기준선은 <b>" + won(D.top) + "원</b>입니다 — 넘겨 낸 돈은 <b>선입금</b>으로 다음 달 회비에 넣기 때문입니다"
           + "(아래 상자). 기준선과의 차이가 <b>구걸금액</b>입니다.")
     + (D.ties ? " 기준선을 함께 채운 회원이 <b>" + D.ties + "명</b> 더 있고, 이들의 구걸금액은 0원입니다." : "");
 }
+/* 선입금이 어느 달 회비인지 그대로 적는다 — "2026.10월,11월"처럼 달을 밝혀야 회원이 안 헷갈린다 */
+const kmonths = (from, n) => {
+  if (!from) return "";
+  let [y, m] = from.split("-").map(Number), out = [], py = null;
+  for (let i = 0; i < (n || 1); i++) {
+    out.push((py === y ? "" : y + ".") + m + "월"); py = y;
+    if (++m > 12) { m = 1; y++; }
+  }
+  return out.join(",");
+};
 /* 서킷브레이커 — 한 사람이 크게 넣어 기준이 튀는 것을 막고, 넘친 돈은 다음 달 회비로 미룬다.
    회원이 "왜 제일 많이 낸 사람이 왕초가 아니지?"에서 멈추지 않도록 표로 같이 보여 준다. */
 {
@@ -1467,9 +1476,9 @@ $("mcount").textContent = D.members.length + "명 · " + MS.length + "개월";
     Object.assign({}, k, { m: D.members.find(x => x.name === k["회원"]) })).filter(x => x.m);
   if (list.length) {
     $("keepbox").innerHTML =
-        '<div class="kb-ttl">서킷브레이커 — 넘친 회비는 다음 달로</div>'
+        '<div class="kb-ttl">서킷브레이커(선입금) 넘친 회비는 다음 달로</div>'
       + (K["안내"] ? '<p class="kb-why">' + esc(K["안내"]) + '</p>' : "")
-      + '<table><thead><tr><th>회원</th><th>실제 입금</th><th>이번 인정</th><th>킵</th><th>구걸금액</th></tr></thead><tbody>'
+      + '<table><thead><tr><th>회원</th><th>실제 입금</th><th>이번 인정</th><th>선입금</th><th>구걸금액</th></tr></thead><tbody>'
       + list.map(x => '<tr><td>' + esc(x.m.name) + '</td>'
           + '<td class="num">' + won(x.m.total) + '</td>'
           + '<td class="num">' + won(x.m.counted) + '</td>'
@@ -1478,9 +1487,9 @@ $("mcount").textContent = D.members.length + "명 · " + MS.length + "개월";
       + '</tbody></table>'
       + '<p class="kb-foot">' + list.map(x =>
           '<b>' + esc(x.m.name) + '</b> ' + won(x["금액"]) + '원 — ' + esc(x["사유"] || "")
-          + '. ' + (x["부터"] || "").replace("-", ".") + '월부터 <b>' + x["개월"] + '개월치</b> 회비로 미리 인정합니다.'
+          + '. <b>' + kmonths(x["부터"], x["개월"]) + '</b> ' + x["개월"] + '개월치 회비로 미리 인정합니다.'
           + (x["날짜"] ? ' (' + dot(x["날짜"]) + ' 입금)' : "")).join("<br>")
-      + '<br>킵은 <b>통장에 그대로 있는 돈</b>이라 IV 지분현황의 납입회비에는 전액(<b>'
+      + '<br>선입금은 <b>통장에 그대로 있는 돈</b>이라 IV 지분현황의 납입회비에는 전액(<b>'
       + won(list[0].m.total) + '원</b>) 그대로 들어갑니다. 구걸금액 기준만 <b>' + won(D.top)
       + '원</b>으로 잡습니다.</p>';
     $("keepbox").hidden = false;
@@ -1504,8 +1513,8 @@ $("members").innerHTML = D.members.map(m => {
     + (m.first ? '<span class="ms2">기간<b>' + dot(m.first) + ' ~ ' + dot(m.last) + '</b></span>' : '')
     + '</div>'
     + (m.keep || m.flags.length ? '<div class="flagline">'
-        + (m.keep ? '<i class="keep">킵 ' + won(m.keep) + '원 · '
-            + (m.keep_from || "").replace("-", ".") + '부터 ' + m.keep_months + '개월분</i>' : "")
+        + (m.keep ? '<i>선입금 ' + won(m.keep) + '원 (' + kmonths(m.keep_from, m.keep_months)
+            + ') ' + m.keep_months + '개월분</i>' : "")
         + m.flags.map(f => "<i>" + esc(f) + "</i>").join("") + '</div>' : "")
     + '</div>';
 }).join("");
