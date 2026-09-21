@@ -435,8 +435,8 @@ tbody tr.gone .fz{background:var(--surface-2)}
     font-weight:600; font-size:11.5px; border-right:2px solid var(--line); color:var(--rust)}
 .z5.zero{color:var(--faint)}
 /* 선입금이 있는 회원: 인정액 아래에 실제 입금액을, 구분 아래에 '선입'을 초록으로 덧붙인다 */
-.z4 .pre, .z3 .pre{display:block; font-size:11.5px; font-weight:600; color:var(--ok); margin-top:1px}
-.z3 .pre{font-family:"IBM Plex Sans KR","Malgun Gothic",sans-serif}
+.z4 .pre, .z5 .pre{display:block; font-size:11.5px; font-weight:600; color:var(--ok); margin-top:1px}
+.z5 .pre{font-family:"IBM Plex Sans KR","Malgun Gothic",sans-serif}
 .z5.king{font-family:"IBM Plex Sans KR","Malgun Gothic",sans-serif; font-weight:600; color:var(--ok)}
 .z3 b{display:inline-block; padding:1px 4px; border-radius:2px; font-weight:600;
   font-size:11.5px; font-family:"IBM Plex Mono",monospace}
@@ -1562,13 +1562,13 @@ mt.innerHTML =
       return '<tr class="' + (gone ? "gone" : "") + '">'
         + '<td class="fz z1">' + m.no + '</td>'
         + '<td class="fz z2">' + esc(m.name) + '</td>'
-        + '<td class="fz z3"><b class="' + m.role + '">' + esc(m.role) + '</b>'
-        + (m.keep ? '<span class="pre" title="선입금이 남아 있는 회원">선입</span>' : "") + '</td>'
+        + '<td class="fz z3"><b class="' + m.role + '">' + esc(m.role) + '</b></td>'
         + '<td class="fz z4">' + won(m.counted)
         + (m.keep ? '<span class="pre" title="선입금까지 더한 실제 입금액">' + won(m.total) + '</span>' : "")
         + '</td>'
         + '<td class="fz z5' + (m.king ? " king" : m.beg ? "" : " zero") + '">'
-        + (m.beg === null ? "—" : m.king ? "왕초" : m.beg > 0 ? won(m.beg) : "·") + '</td>'
+        + (m.beg === null ? "—" : m.king ? "왕초" : m.beg > 0 ? won(m.beg) : "·")
+        + (m.keep ? '<span class="pre" title="선입금이 남아 있는 회원">선입</span>' : "") + '</td>'
         + REV.map((ym,i) => {
             const v = m.by_month[ym] || 0;
             const cr = (m.credits || []).some(c => c.date.slice(0,7) === ym);
