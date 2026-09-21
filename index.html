@@ -434,8 +434,9 @@ tbody tr.gone .fz{background:var(--surface-2)}
 .z5{left:204px; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;
     font-weight:600; font-size:11.5px; border-right:2px solid var(--line); color:var(--rust)}
 .z5.zero{color:var(--faint)}
-/* 선입금이 있는 회원은 인정액 아래에 실제 입금액을 초록으로 덧붙인다 */
-.z4 .pre{display:block; font-size:11.5px; font-weight:600; color:var(--ok); margin-top:1px}
+/* 선입금이 있는 회원: 인정액 아래에 실제 입금액을, 구분 아래에 '선입'을 초록으로 덧붙인다 */
+.z4 .pre, .z3 .pre{display:block; font-size:11.5px; font-weight:600; color:var(--ok); margin-top:1px}
+.z3 .pre{font-family:"IBM Plex Sans KR","Malgun Gothic",sans-serif}
 .z5.king{font-family:"IBM Plex Sans KR","Malgun Gothic",sans-serif; font-weight:600; color:var(--ok)}
 .z3 b{display:inline-block; padding:1px 4px; border-radius:2px; font-weight:600;
   font-size:11.5px; font-family:"IBM Plex Mono",monospace}
@@ -933,7 +934,7 @@ footer .sig b{display:block; font-size:18px; font-weight:700; color:var(--ink)}
   font-weight:700; letter-spacing:-.02em;
   text-shadow:0 0 2px var(--paper), 0 0 2px var(--paper), 0 0 3px var(--paper)}
 /* 버튼으로 섹션에 도착했을 때 제목이 화면 맨 위에 딱 붙지 않게 */
-#sec-members, #sec-ledger{scroll-margin-top:12px}
+#sec-members, #sec-matrix, #sec-ledger{scroll-margin-top:12px}
 .fab svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2.6;
   stroke-linecap:round; stroke-linejoin:round;
   filter:drop-shadow(0 0 1.5px var(--paper)) drop-shadow(0 0 1.5px var(--paper))}
@@ -976,7 +977,7 @@ footer .sig b{display:block; font-size:18px; font-weight:700; color:var(--ink)}
   <div class="mtable" id="members"></div>
 </section>
 
-<section>
+<section id="sec-matrix">
   <div class="shead"><span class="snum">III</span><h2>월별 적선 및 구걸표</h2>
     <span class="scount">단위 천원 · 최근 월부터 · 좌우로 밀어서 보기</span></div>
   <p class="lede" id="mxlede"></p>
@@ -1072,7 +1073,7 @@ footer .sig b{display:block; font-size:18px; font-weight:700; color:var(--ink)}
 <nav class="fab" aria-label="화면 이동">
   <button type="button" id="goTop" aria-label="맨 위로" title="맨 위로">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
-  <button type="button" id="goMembers" class="txt" aria-label="II 회원별 구걸현황으로" title="II 회원별 구걸현황">구걸</button>
+  <button type="button" id="goMembers" class="txt" aria-label="III 월별 적선 및 구걸표로" title="III 월별 적선 및 구걸표">구걸</button>
   <button type="button" id="goLedger" aria-label="X 전체 원장으로" title="X 전체 원장">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
   <button type="button" id="goReload" aria-label="새로고침" title="새로고침">
@@ -1561,7 +1562,8 @@ mt.innerHTML =
       return '<tr class="' + (gone ? "gone" : "") + '">'
         + '<td class="fz z1">' + m.no + '</td>'
         + '<td class="fz z2">' + esc(m.name) + '</td>'
-        + '<td class="fz z3"><b class="' + m.role + '">' + esc(m.role) + '</b></td>'
+        + '<td class="fz z3"><b class="' + m.role + '">' + esc(m.role) + '</b>'
+        + (m.keep ? '<span class="pre" title="선입금이 남아 있는 회원">선입</span>' : "") + '</td>'
         + '<td class="fz z4">' + won(m.counted)
         + (m.keep ? '<span class="pre" title="선입금까지 더한 실제 입금액">' + won(m.total) + '</span>' : "")
         + '</td>'
@@ -1996,7 +1998,7 @@ draw();
   const smooth = matchMedia("(prefers-reduced-motion:reduce)").matches ? "auto" : "smooth";
   const go = id => $(id).scrollIntoView({ block: "start", behavior: smooth });
   $("goTop").onclick = () => scrollTo({ top: 0, behavior: smooth });
-  $("goMembers").onclick = () => go("sec-members");   // II. 회원별 구걸현황
+  $("goMembers").onclick = () => go("sec-matrix");    // III. 월별 적선 및 구걸표
   $("goLedger").onclick = () => go("sec-ledger");     // X. 전체 원장
   $("goReload").onclick = () => location.reload();
 }
