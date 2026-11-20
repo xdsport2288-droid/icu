@@ -1473,8 +1473,8 @@ const kmonths = list => {
 /* 서킷브레이커 — 한 사람이 크게 넣어 기준이 튀는 것을 막고, 넘친 돈은 다음 달 회비로 미룬다.
    회원이 "왜 제일 많이 낸 사람이 왕초가 아니지?"에서 멈추지 않도록 표로 같이 보여 준다. */
 {
-  const K = D.keep || {}, list = (K["목록"] || []).map(k =>
-    Object.assign({}, k, { m: D.members.find(x => x.name === k["회원"]) })).filter(x => x.m);
+  const K = D.keep || {}, list = D.members.filter(m => m.keep > 0).map(m => ({
+    m, 사유: m.keep_why || K["사유"] || "", 날짜: m.keep_date || "" }));
   if (list.length) {
     $("keepbox").innerHTML =
         '<div class="kb-ttl">서킷브레이커(선입금) 넘친 회비는 다음 달로</div>'
@@ -1487,16 +1487,19 @@ const kmonths = list => {
           + '<td class="num">' + won(x.m.beg) + '</td></tr>').join("")
       + '</tbody></table>'
       + '<p class="kb-foot">' + list.map(x =>
-          '<b>' + esc(x.m.name) + '</b> ' + won(x.m.keep_all) + '원 — ' + esc(x["사유"] || "")
+          '<b>' + esc(x.m.name) + '</b> ' + won(x.m.keep_all) + '원 — ' + esc(x.사유)
           + '. <b>' + kmonths(x.m.keep_covers) + '</b> ' + x.m.keep_covers.length + '개월치 회비로 인정합니다.'
-          + (x["날짜"] ? ' (' + dot(x["날짜"]) + ' 입금)' : "")
+          + (x.날짜 ? ' (' + dot(x.날짜) + ' 입금)' : "")
           + (x.m.keep_used ? '<br>그 가운데 <b>' + kmonths(x.m.keep_done) + '</b>분 '
               + won(x.m.keep_used) + '원은 이미 회비로 들어갔고, 남은 선입금은 <b>' + won(x.m.keep) + '원</b>'
               + (x.m.keep_left.length ? '(' + kmonths(x.m.keep_left) + '분)' : "") + '입니다.'
             : ' 달이 지날 때마다 한 달치씩 회비로 자동 반영됩니다.')).join("<br>")
       + '<br>선입금은 <b>통장에 그대로 있는 돈</b>이라 IV 지분현황의 납입회비에는 전액(<b>'
       + won(list[0].m.total) + '원</b>) 그대로 들어갑니다. 구걸금액 기준만 <b>' + won(D.top)
-      + '원</b>으로 잡습니다.</p>';
+      + '원</b>으로 잡습니다.'
+      + (list.some(x => x.m.keep_auto)
+          ? ' 다른 회원이 따라 내면 기준이 올라가면서 선입금이 그만큼 저절로 회비로 들어갑니다.' : "")
+      + '</p>';
     $("keepbox").hidden = false;
   }
 }
